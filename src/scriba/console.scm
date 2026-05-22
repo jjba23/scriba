@@ -19,7 +19,10 @@
   #:use-module (scriba scriba)
   #:export (scriba-console-logger))
 
-(define* (%make-scriba-console-logger #:key name (level 'info))
+(define* (%make-scriba-console-logger #:key name
+                                      (level 'info)
+                                      (with-timestamp? #t)
+                                      (timestamp-format "%F %T"))
   (define logger-name-fragment
     (if name
         (format #f "[~a] " name) ""))
@@ -28,8 +31,11 @@
     (let ((pref (string-append "\n["
                                (symbol->string lvl) "] " logger-name-fragment)))
       (lambda (msg . args)
-        (apply format #t
-               (string-append pref msg) args))))
+        (let* ((t (strftime timestamp-format
+                            (localtime (current-time))))
+               (time-pref (string-append "[" t "] ")))
+          (apply format #t
+                 (string-append pref time-pref msg) args)))))
 
   (make-filtered-logger #:name name
                         #:level level
