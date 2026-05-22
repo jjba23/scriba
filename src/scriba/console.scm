@@ -19,18 +19,17 @@
   #:use-module (scriba scriba)
   #:export (scriba-console-logger))
 
-(define* (scriba-console-logger #:key name
-                                (level 'info))
+(define (%make-scriba-console-logger name level)
   (define logger-name-fragment
     (if name
         (format #f "[~a] " name) ""))
 
-  (define (make-console-printer level)
-    (lambda (msg . args)
-      (apply format #t
-             (string-append "\n["
-                            (format #f "~a" level) "] " logger-name-fragment
-                            msg) args)))
+  (define (make-console-printer lvl)
+    (let ((pref (string-append "\n["
+                               (symbol->string lvl) "] " logger-name-fragment)))
+      (lambda (msg . args)
+        (apply format #t
+               (string-append pref msg) args))))
 
   (make-filtered-logger #:name name
                         #:level level
@@ -39,3 +38,13 @@
                         #:log-info-proc (make-console-printer 'info)
                         #:log-warn-proc (make-console-printer 'warn)
                         #:log-error-proc (make-console-printer 'error)))
+
+(define scriba-console-logger
+  (let ((cache (make-hash-table)))
+    (lambda* (#:key (name #f)
+              (level 'info))
+      (let* ((key (cons name level))
+             (cached-logger (hash-ref cache key)))
+        (if cached-logger cached-logger
+            (let ((new-logger (%make-scriba-console-logger name level)))
+              (hash-set! cache key new-logger) new-logger))))))

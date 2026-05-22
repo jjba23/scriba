@@ -24,7 +24,8 @@
                                  log-warn
                                  log-error
                                  supported-log-levels
-                                 is-in-log-level?))
+                                 is-in-log-level?
+                                 memoize-logger))
 
 (define-syntax define-record-with-kw
   (syntax-rules ()
