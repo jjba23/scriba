@@ -24,6 +24,9 @@
                                  log-warn
                                  log-error
                                  log-levels
+                                 iso-8601-time-format
+                                 human-time-format
+                                 log-friendly-time-format
                                  is-in-log-level?
                                  memoize-logger))
 
@@ -105,3 +108,12 @@
                        (if cached-logger cached-logger
                            (let ((new-logger (apply factory-proc kwargs)))
                              (hash-set! cache kwargs new-logger) new-logger))))))))
+
+(define human-time-format
+  "%F %T %Z")
+
+(define iso-8601-time-format
+  "%Y-%m-%dT%H:%M:%S%z")
+
+(define log-friendly-time-format
+  "%F %T %z")

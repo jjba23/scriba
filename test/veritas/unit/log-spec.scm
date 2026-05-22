@@ -33,10 +33,8 @@
                               #:name
                               "default configuration and simple message")
                  (assert-true (begin
-                                (log-info s
-                                 "Hello Scriba, current time is: ~a, current module is: ~a!"
-                                 (current-time)
-                                 (current-module)) #t)
+                                (log-info s "Hello Scriba, 2 + 2 = ~a!"
+                                          (+ 2 2)) #t)
                               #:name
                               "default configuration and formatted message")))
          (test "scriba-json-logger"

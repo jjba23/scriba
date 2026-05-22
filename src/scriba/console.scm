@@ -22,7 +22,7 @@
 (define* (%make-scriba-console-logger #:key name
                                       (level 'info)
                                       (with-timestamp? #t)
-                                      (timestamp-format "%F %T"))
+                                      (timestamp-format human-time-format))
   (define logger-name-fragment
     (if name
         (format #f "[~a] " name) ""))
@@ -31,9 +31,11 @@
     (let ((pref (string-append "\n["
                                (symbol->string lvl) "] " logger-name-fragment)))
       (lambda (msg . args)
-        (let* ((t (strftime timestamp-format
-                            (localtime (current-time))))
-               (time-pref (string-append "[" t "] ")))
+        (let* ((time-pref (if with-timestamp?
+                              (string-append "["
+                                             (strftime timestamp-format
+                                                       (localtime (current-time)))
+                                             "] ") "")))
           (apply format #t
                  (string-append pref time-pref msg) args)))))
 

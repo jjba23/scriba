@@ -21,18 +21,24 @@
   #:export (scriba-json-logger))
 
 (define* (%make-scriba-json-logger #:key name
-                                   (level 'info) pretty
+                                   (level 'info)
+                                   pretty
                                    (with-timestamp? #t)
-                                   (timestamp-format "%F %T"))
+                                   (timestamp-format human-time-format))
   (define (make-json-printer lvl)
     (lambda (msg . args)
       (let* ((m (apply format #f msg args))
-             (t (strftime timestamp-format
-                          (localtime (current-time))))
-             (fields `((level unquote lvl)
-                       (name unquote name)
-                       (message unquote m)
-                       (time unquote t)))
+             (level-fields `((level unquote lvl)))
+             (base-fields `((message unquote m)))
+             (name-fields (if name
+                              `((name unquote name))
+                              '()))
+             (time-fields (if with-timestamp?
+                              `((time unquote
+                                      (strftime timestamp-format
+                                                (localtime (current-time)))))
+                              '()))
+             (fields (append level-fields name-fields base-fields time-fields))
              (j (scm->json-string fields
                                   #:pretty pretty)))
         (format #t "\n~a" j))))
