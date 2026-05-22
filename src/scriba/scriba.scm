@@ -94,3 +94,15 @@
   (and=> (memq b supported-log-levels)
          (lambda (tail)
            (if (memq a tail) #t #f))))
+
+(define (memoize-logger factory-proc)
+  "Wraps a logger FACTORY-PROC with a caching layer based on name and level."
+  (let ((cache (make-hash-table)))
+    (lambda* (#:key (name #f) (level 'info))
+      (let* ((key (cons name level))
+             (cached-logger (hash-ref cache key)))
+        (if cached-logger
+            cached-logger
+            (let ((new-logger (factory-proc #:name name #:level level)))
+              (hash-set! cache key new-logger)
+              new-logger))))))

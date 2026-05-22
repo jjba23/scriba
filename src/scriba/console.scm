@@ -19,7 +19,7 @@
   #:use-module (scriba scriba)
   #:export (scriba-console-logger))
 
-(define (%make-scriba-console-logger name level)
+(define* (%make-scriba-console-logger #:key name level)
   (define logger-name-fragment
     (if name
         (format #f "[~a] " name) ""))
@@ -40,11 +40,4 @@
                         #:log-error-proc (make-console-printer 'error)))
 
 (define scriba-console-logger
-  (let ((cache (make-hash-table)))
-    (lambda* (#:key (name #f)
-              (level 'info))
-      (let* ((key (cons name level))
-             (cached-logger (hash-ref cache key)))
-        (if cached-logger cached-logger
-            (let ((new-logger (%make-scriba-console-logger name level)))
-              (hash-set! cache key new-logger) new-logger))))))
+  (memoize-logger %make-scriba-console-logger))
