@@ -23,7 +23,7 @@
                                  log-info
                                  log-warn
                                  log-error
-                                 supported-log-levels
+                                 log-levels
                                  is-in-log-level?
                                  memoize-logger))
 
@@ -86,20 +86,22 @@
 (define-logger-method log-warn logger-log-warn "Log WARN")
 (define-logger-method log-error logger-log-error "Log ERROR")
 
-(define supported-log-levels
+(define log-levels
   '(trace debug info warn error))
 
 (define (is-in-log-level? a b)
   "Is log level A allowed in a B context?"
-  (and=> (memq b supported-log-levels)
+  (and=> (memq b log-levels)
          (lambda (tail)
            (if (memq a tail) #t #f))))
 
-(define (memoize-logger factory-proc)
-  "Wraps a logger FACTORY-PROC with a generic caching layer."
-  (let ((cache (make-hash-table)))
-    (lambda kwargs
-      (let ((cached-logger (hash-ref cache kwargs)))
-        (if cached-logger cached-logger
-            (let ((new-logger (apply factory-proc kwargs)))
-              (hash-set! cache kwargs new-logger) new-logger))))))
+;; Wraps a logger FACTORY-PROC with a caching layer.
+(define-syntax memoize-logger
+  (syntax-rules ()
+                ((_ factory-proc)
+                 (let ((cache (make-hash-table)))
+                   (lambda kwargs
+                     (let ((cached-logger (hash-ref cache kwargs)))
+                       (if cached-logger cached-logger
+                           (let ((new-logger (apply factory-proc kwargs)))
+                             (hash-set! cache kwargs new-logger) new-logger))))))))
