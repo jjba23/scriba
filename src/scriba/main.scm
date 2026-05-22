@@ -16,11 +16,11 @@
 ;; along with scriba.  If not, see <https://www.gnu.org/licenses/>.
 
 (define-module (scriba main)
-#:use-module (scriba scriba)
-#:use-module (scriba console))
+  #:use-module (scriba scriba)
+  #:use-module (scriba console))
 
-
-(let* ((s (scriba-console-logger #:name 'my-logger #:level 'info)))
+(let* ((s (scriba-console-logger #:name 'my-logger
+                                 #:level 'info)))
   (log-info s "1 + 1 = ~a"
             (+ 1 1))
   (log-error s "some error happened"))

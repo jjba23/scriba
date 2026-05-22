@@ -48,7 +48,6 @@
                        (log-warn-proc logger-log-warn)
                        (log-error-proc logger-log-error))
 
-;; Do nothing with the log message
 (define log-unit
   (lambda (msg . args)
     (values)))
@@ -75,7 +74,6 @@
 (define-syntax define-logger-method
   (syntax-rules ()
                 ((_ method-name accessor docstring)
-                 ;; standard 'define' supports dot notation for rest args just fine
                  (define (method-name logger message . args)
                    docstring
                    (apply (accessor logger)
