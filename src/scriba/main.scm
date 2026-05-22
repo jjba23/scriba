@@ -17,10 +17,19 @@
 
 (define-module (scriba main)
   #:use-module (scriba scriba)
-  #:use-module (scriba console))
+  #:use-module (scriba console)
+  #:use-module (scriba json))
 
-(let* ((s (scriba-console-logger #:name 'my-logger
+(let* ((s (scriba-console-logger #:name 'console-logger
                                  #:level 'info)))
   (log-info s "1 + 1 = ~a"
             (+ 1 1))
   (log-error s "some error happened"))
+
+(newline)
+
+(let* ((s (scriba-json-logger #:name 'json-logger
+                              #:level 'info)))
+  (log-info s "2 + 2 = ~a"
+            (+ 2 2))
+  (log-warn s "something suspicious happened"))
