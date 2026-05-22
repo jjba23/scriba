@@ -18,40 +18,59 @@
 (define-module (scriba scriba)
   #:use-module (srfi srfi-9)
   #:use-module (ice-9 match)
-  #:export (get-logger scriba-console-logger
-                       log-trace
-                       log-debug
-                       log-info
-                       log-warn
-                       log-error))
+  #:export (make-filtered-logger log-trace
+                                 log-debug
+                                 log-info
+                                 log-warn
+                                 log-error
+                                 supported-log-levels
+                                 is-in-log-level?))
 
 (define-syntax define-record-with-kw
   (syntax-rules ()
                 ((_ (type-name constructor-name pred) kw-constructor-name
                     (field-name accessor-name) ...)
                  (begin
-                   ;; Define the standard SRFI-9 record
                    (define-record-type type-name
                      (constructor-name field-name ...) pred
                      (field-name accessor-name) ...)
 
-                   ;; Define the keyword-argument constructor
                    (define* (kw-constructor-name #:key field-name ...)
-                     (constructor-name field-name ...))
-
-                   ;; Auto-export members
-                   ;; (export type-name pred kw-constructor-name accessor-name
-                   ;; ...)
-                   ))))
+                     (constructor-name field-name ...))))))
 
 (define-record-with-kw (<logger> %make-logger logger?)
                        mk-logger
                        (name-val logger-name)
+                       (level-val logger-level)
                        (log-trace-proc logger-log-trace)
                        (log-debug-proc logger-log-debug)
                        (log-info-proc logger-log-info)
                        (log-warn-proc logger-log-warn)
                        (log-error-proc logger-log-error))
+
+;; Do nothing with the log message
+(define log-unit
+  (lambda (msg . args)
+    (values)))
+
+(define* (make-filtered-logger #:key name
+                               (level 'info)
+                               log-trace-proc
+                               log-debug-proc
+                               log-info-proc
+                               log-warn-proc
+                               log-error-proc)
+  "Creates a logger, mapping excluded log levels to log-unit."
+  (define (maybe-proc target-level proc)
+    (if (is-in-log-level? target-level level) proc log-unit))
+
+  (mk-logger #:name-val name
+             #:level-val level
+             #:log-trace-proc (maybe-proc 'trace log-trace-proc)
+             #:log-debug-proc (maybe-proc 'debug log-debug-proc)
+             #:log-info-proc (maybe-proc 'info log-info-proc)
+             #:log-warn-proc (maybe-proc 'warn log-warn-proc)
+             #:log-error-proc (maybe-proc 'error log-error-proc)))
 
 (define-syntax define-logger-method
   (syntax-rules ()
@@ -68,10 +87,6 @@
 (define-logger-method log-warn logger-log-warn "Log WARN")
 (define-logger-method log-error logger-log-error "Log ERROR")
 
-(define log-unit
-  (lambda (msg . args)
-    (values)))
-
 (define supported-log-levels
   '(trace debug info warn error))
 
@@ -80,50 +95,3 @@
   (and=> (memq b supported-log-levels)
          (lambda (tail)
            (if (memq a tail) #t #f))))
-
-(define* (scriba-console-logger #:key (name #f)
-                                (level 'info))
-  (define logger-name-fragment
-    (if name
-        (format #f "[~a] " name) ""))
-
-  (define log-trace
-    (if (is-in-log-level? 'trace level)
-        (lambda (msg . args)
-          (apply format #t
-                 (string-append "\n[trace] " logger-name-fragment msg) args))
-        log-unit))
-
-  (define log-debug
-    (if (is-in-log-level? 'debug level)
-        (lambda (msg . args)
-          (apply format #t
-                 (string-append "\n[debug] " logger-name-fragment msg) args))
-        log-unit))
-
-  (define log-info
-    (if (is-in-log-level? 'info level)
-        (lambda (msg . args)
-          (apply format #t
-                 (string-append "\n[info] " logger-name-fragment msg) args))
-        log-unit))
-
-  (define log-warn
-    (if (is-in-log-level? 'warn level)
-        (lambda (msg . args)
-          (apply format #t
-                 (string-append "\n[warn] " logger-name-fragment msg) args))
-        log-unit))
-
-  (define log-error
-    (if (is-in-log-level? 'error level)
-        (lambda (msg . args)
-          (apply format #t
-                 (string-append "\n[error] " logger-name-fragment msg) args))
-        log-unit))
-
-  (mk-logger #:log-trace-proc log-trace
-             #:log-debug-proc log-debug
-             #:log-info-proc log-info
-             #:log-warn-proc log-warn
-             #:log-error-proc log-error))

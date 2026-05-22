@@ -16,7 +16,8 @@
 ;; along with scriba.  If not, see <https://www.gnu.org/licenses/>.
 
 (define-module (scriba main)
-#:use-module (scriba scriba))
+#:use-module (scriba scriba)
+#:use-module (scriba console))
 
 
 (let* ((s (scriba-console-logger #:name 'my-logger #:level 'info)))

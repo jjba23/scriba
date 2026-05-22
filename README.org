@@ -34,9 +34,11 @@ Additionally, a logger is said to be an ancestor of another logger if its name f
 
 Creating a logger is as simple as:
 #+begin_src scheme
-(get-logger) ;; logger without name, a.k.a. root logger
-(get-logger #:name 'my-logger) ;; logger with name
-(get-logger #:level 'debug) ;; a debug logger without name
+(let* ((s (scriba-console-logger #:name 'my-logger #:level 'info))
+       (s2 (scriba-console-logger)))
+  (log-info s "1 + 1 = ~a"
+            (+ 1 1))
+  (log-error s "some error happened"))
 #+end_src
 
 If a logger is not assigned a level, then it inherits one from its closest ancestor with an assigned level, and otherwise will default to ~info~.
