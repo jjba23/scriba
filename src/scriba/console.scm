@@ -19,7 +19,7 @@
   #:use-module (scriba scriba)
   #:export (scriba-console-logger))
 
-(define* (%make-scriba-console-logger #:key name level)
+(define* (%make-scriba-console-logger #:key name (level 'info))
   (define logger-name-fragment
     (if name
         (format #f "[~a] " name) ""))

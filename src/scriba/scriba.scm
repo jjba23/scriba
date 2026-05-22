@@ -54,7 +54,7 @@
     (values)))
 
 (define* (make-filtered-logger #:key name
-                               (level 'info)
+                               level
                                log-trace-proc
                                log-debug-proc
                                log-info-proc
@@ -96,13 +96,10 @@
            (if (memq a tail) #t #f))))
 
 (define (memoize-logger factory-proc)
-  "Wraps a logger FACTORY-PROC with a caching layer based on name and level."
+  "Wraps a logger FACTORY-PROC with a generic caching layer."
   (let ((cache (make-hash-table)))
-    (lambda* (#:key (name #f) (level 'info))
-      (let* ((key (cons name level))
-             (cached-logger (hash-ref cache key)))
-        (if cached-logger
-            cached-logger
-            (let ((new-logger (factory-proc #:name name #:level level)))
-              (hash-set! cache key new-logger)
-              new-logger))))))
+    (lambda kwargs
+      (let ((cached-logger (hash-ref cache kwargs)))
+        (if cached-logger cached-logger
+            (let ((new-logger (apply factory-proc kwargs)))
+              (hash-set! cache kwargs new-logger) new-logger))))))

@@ -20,14 +20,14 @@
   #:use-module (scriba scriba)
   #:export (scriba-json-logger))
 
-(define* (%make-scriba-json-logger #:key name level)
+(define* (%make-scriba-json-logger #:key name (level 'info) pretty)
   (define (make-json-printer lvl)
     (lambda (msg . args)
       (let* ((m (apply format #f msg args))
              (fields `((level unquote lvl)
                        (name unquote name)
                        (message unquote m)))
-             (j (scm->json-string fields #:null #f #:pretty #f)))
+             (j (scm->json-string fields #:null #f #:pretty pretty)))
         (format #t "\n~a" j))))
 
   (make-filtered-logger #:name name

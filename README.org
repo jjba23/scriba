@@ -18,32 +18,44 @@ You can find the technical Guile Scheme API documentation  for Scriba here, wher
 
 https://jointhefreeworld.org/api-docs/scriba/API.html
 
-Scriba is built upon three main abstractions that complement each other: Loggers, Appenders and Layouts. These components work together to enable logging messages according to type and level, and to control at runtime how those messages will be formatted and to where they are reported.
+Scriba is built upon the main abstraction of a logger. It achieves high performance by memoizing expensive computations and by doing some compile time and macro expansion computations.
 
-Separating these concepts also means more modularity and flexibility. It also makes it trivial to extend scriba.
+All the components work together to enable logging messages according to wanted format, type and level, and to control at runtime how those messages will be formatted and to where they are reported.
+
+Separating these concepts also means more modularity and flexibility. It also makes it trivial to extend scriba and write your own logger.
 
 One of the biggest use-cases and advantages of logging APIs when compared to a simple ~display~ , ~write~ or ~println~ is the ability to disable certain log statements and allow others. This should be configurable and at the user's criteria.
 
-*** Loggers
+** Loggers
 
-Loggers are named entities that are responsible for emitting logs. They are also the main point of interaction between the user and scriba.
+Loggers are (optionally named) entities that are responsible for emitting logs. They are also the main point of interaction between the user and scriba.
 
-A logger may be configured to the user's needs, with parameters including name, level and others. Users can also configure the root logger, which is the default logger if no others took precedence.
-
-Additionally, a logger is said to be an ancestor of another logger if its name followed by a dash is a prefix of the descendant logger name, e.g. ~my-routine~ logger is ancestor of ~my-routine-sub-routine~ logger.
+A logger may be configured to the user's needs, with parameters including name, level and others.
 
 Creating a logger is as simple as:
 #+begin_src scheme
-(let* ((s (scriba-console-logger #:name 'my-logger #:level 'info))
-       (s2 (scriba-console-logger)))
+(let* ((s (scriba-console-logger #:name 'console-logger
+                                 #:level 'info)))
   (log-info s "1 + 1 = ~a"
             (+ 1 1))
   (log-error s "some error happened"))
 #+end_src
 
-If a logger is not assigned a level, then it inherits one from its closest ancestor with an assigned level, and otherwise will default to ~info~.
+Or if you like JSON structured logging better:
+#+begin_src scheme
+(let* ((s (scriba-json-logger #:name 'json-logger
+                              #:level 'info
+                              #:pretty #f)))
+  (log-info s "2 + 2 = ~a"
+            (+ 2 2))
+  (log-warn s "something suspicious happened"))
+#+end_src
 
-*** Log levels
+It's worth noting that specific loggers may have specific configuration parameters found nowhere else.
+
+If a logger is not assigned a level, then it inherits one from its closest ancestor with an assigned level, and otherwise will default to ~info~ (this varies per implementations)
+
+** Log levels
 
 A logging request is said to be enabled if its level is higher than or equal to the effective level of its logger. Otherwise, the request is said to be disabled. As described previously, a logger without an assigned level will inherit one from its nearest ancestor. This rule is summarized below.
 
@@ -56,7 +68,7 @@ A log request of level p issued to a logger having an effective level q, is enab
 
 * Runtime Dependencies
 
-Scriba has minimal dependencies and basically only needs GNU Guile Scheme itself.
+Scriba has minimal dependencies and basically only needs GNU Guile Scheme itself and a small number of libraries. See ~manifest.scm~ for more.
 
 ------------------------
 

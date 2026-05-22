@@ -29,7 +29,8 @@
 (newline)
 
 (let* ((s (scriba-json-logger #:name 'json-logger
-                              #:level 'info)))
+                              #:level 'info
+                              #:pretty #f)))
   (log-info s "2 + 2 = ~a"
             (+ 2 2))
   (log-warn s "something suspicious happened"))
