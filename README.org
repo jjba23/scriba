@@ -32,6 +32,8 @@ Loggers are (optionally named) entities that are responsible for emitting logs. 
 
 A logger may be configured to the user's needs, with parameters including name, level and others.
 
+You can find multiple examples, from simple to complex, in the project's unit tests: [[file:test/veritas/unit/log-spec.scm]]
+
 Creating a logger is as simple as:
 #+begin_src scheme
 (let* ((s (scriba-console-logger #:name 'console-logger

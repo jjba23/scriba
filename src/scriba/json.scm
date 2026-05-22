@@ -27,7 +27,7 @@
              (fields `((level unquote lvl)
                        (name unquote name)
                        (message unquote m)))
-             (j (scm->json-string fields #:null #f #:pretty pretty)))
+             (j (scm->json-string fields #:pretty pretty)))
         (format #t "\n~a" j))))
 
   (make-filtered-logger #:name name

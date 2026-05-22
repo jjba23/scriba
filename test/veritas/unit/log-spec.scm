@@ -20,14 +20,38 @@
   #:use-module (rnrs bytevectors)
   #:use-module (ice-9 iconv)
   #:use-module (scriba scriba)
+  #:use-module (scriba console)
+  #:use-module (scriba json)
   #:export (spec))
 
 (define simple-log-suite
   (suite "Simple log suite"
-         (test "log tests"
-               (assert-true (begin
-                              (scriba:info "Hello World!") #t)
-                            #:name "scriba:info behaves as expected"))))
+         (test "console log tests"
+               (let* ((s (scriba-console-logger)))
+                 (assert-true (begin
+                                (log-info s "Hello Scriba!") #t)
+                  #:name
+                  "console logger with default configuration and simple message works")
+                 (assert-true (begin
+                                (log-info s
+                                 "Hello Scriba, current time is: ~a, current module is: ~a!"
+                                 (current-time)
+                                 (current-module)) #t)
+                  #:name
+                  "console logger with default configuration and formatted message works")))
+         (test "json log tests"
+               (let* ((s (scriba-json-logger)))
+                 (assert-true (begin
+                                (log-info s "Hello Scriba!") #t)
+                  #:name
+                  "json logger with default configuration and simple message works")
+                 (assert-true (begin
+                                (log-info s
+                                 "Hello Scriba, current time is: ~a, current module is: ~a!"
+                                 (current-time)
+                                 (current-module)) #t)
+                  #:name
+                  "json logger with default configuration and formatted message works")))))
 
 (define (spec)
   (veritas-run simple-log-suite))
