@@ -16,7 +16,7 @@
 ;; along with scriba.  If not, see <https://www.gnu.org/licenses/>.
 
 (define-module (scriba scriba)
-  #:export ())
+  #:export (get-logger))
 
 ;;
 ;; logging helpers
@@ -31,10 +31,5 @@
 
 ;; (define (log-info msg . args)
 ;;   (log-message (format #f "[INFO] ~a"
-;;                        (apply format
-;;                               (append (list #f msg) args)))))
-
-;; (define (log-error msg . args)
-;;   (log-message (format #f "[ERROR] ~a"
 ;;                        (apply format
 ;;                               (append (list #f msg) args)))))

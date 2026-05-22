@@ -18,6 +18,39 @@ You can find the technical Guile Scheme API documentation  for Scriba here, wher
 
 https://jointhefreeworld.org/api-docs/scriba/API.html
 
+Scriba is built upon three main abstractions that complement each other: Loggers, Appenders and Layouts. These components work together to enable logging messages according to type and level, and to control at runtime how those messages will be formatted and to where they are reported.
+
+Separating these concepts also means more modularity and flexibility. It also makes it trivial to extend scriba.
+
+One of the biggest use-cases and advantages of logging APIs when compared to a simple ~display~ , ~write~ or ~println~ is the ability to disable certain log statements and allow others. This should be configurable and at the user's criteria.
+
+*** Loggers
+
+Loggers are named entities that are responsible for emitting logs. They are also the main point of interaction between the user and scriba.
+
+A logger may be configured to the user's needs, with parameters including name, level and others. Users can also configure the root logger, which is the default logger if no others took precedence.
+
+Additionally, a logger is said to be an ancestor of another logger if its name followed by a dash is a prefix of the descendant logger name, e.g. ~my-routine~ logger is ancestor of ~my-routine-sub-routine~ logger.
+
+Creating a logger is as simple as:
+#+begin_src scheme
+(get-logger) ;; logger without name, a.k.a. root logger
+(get-logger #:name 'my-logger) ;; logger with name
+(get-logger #:level 'debug) ;; a debug logger without name
+#+end_src
+
+If a logger is not assigned a level, then it inherits one from its closest ancestor with an assigned level, and otherwise will default to ~info~.
+
+*** Log levels
+
+A logging request is said to be enabled if its level is higher than or equal to the effective level of its logger. Otherwise, the request is said to be disabled. As described previously, a logger without an assigned level will inherit one from its nearest ancestor. This rule is summarized below.
+
+#+begin_quote
+A log request of level p issued to a logger having an effective level q, is enabled if p >= q.
+#+end_quote
+
+~trace~ < ~debug~ < ~info~ < ~warn~ < ~error~
+
 
 * Runtime Dependencies
 
