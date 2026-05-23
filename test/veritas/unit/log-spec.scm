@@ -33,13 +33,17 @@
                                   #:name
                                   "default configuration and simple message")
                  (assert-no-error (lambda ()
+                                    (log-debug s "we should never see this since log level is not high enough!")
+                                    (log-warn s "some kind of warning")
                                     (log-info s "Hello Scriba, 2 + 2 = ~a!"
                                               (+ 2 2)))
                   #:name "default configuration and formatted message")
                  (assert-no-error (lambda ()
                                     (with-log-context `((sample-1 . value-1))
                                                       (log-info s
-                                                       "Some log with context"))))))
+                                                       "Some log with context")))
+                                  #:name
+                                  "default configuration and logging context")))
          (let* ((s (scriba-json-logger)))
            (test "scriba-json-logger"
                  (assert-no-error (lambda ()
@@ -47,6 +51,8 @@
                                   #:name
                                   "default configuration and simple message")
                  (assert-no-error (lambda ()
+                                    (log-debug s "we should never see this since log level is not high enough!")
+                                    (log-warn s "some kind of warning")
                                     (log-info s
                                      "Hello Scriba, current module is: ~a!"
                                      (current-module)))
@@ -54,7 +60,9 @@
                  (assert-no-error (lambda ()
                                     (with-log-context `((sample-2 . value-2))
                                                       (log-info s
-                                                       "Some log with context"))))))))
+                                                       "Some log with context")))
+                                  #:name
+                                  "default configuration and logging context")))))
 
 (define log-level-suite
   (suite "Log Level"
