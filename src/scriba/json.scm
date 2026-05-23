@@ -38,7 +38,8 @@
                                       (strftime timestamp-format
                                                 (localtime (current-time)))))
                               '()))
-             (fields (append level-fields name-fields base-fields time-fields))
+             (dynamic-ctx (current-log-context))
+             (fields (append level-fields name-fields base-fields time-fields dynamic-ctx))
              (j (scm->json-string fields
                                   #:pretty pretty?)))
         (format #t "\n~a" j))))

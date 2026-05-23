@@ -30,6 +30,8 @@
                                  is-in-log-level?
                                  default-time-format
                                  default-log-level
+                                 with-log-context
+                                 current-log-context
                                  memoize-logger))
 
 (define-syntax define-record-with-kw
@@ -125,3 +127,11 @@
 
 (define default-time-format
   (make-parameter human-time-format))
+
+(define current-log-context
+  (make-parameter '()))
+
+(define-syntax-rule (with-log-context ctx body ...)
+  "Dynamically append CTX (an alist) to the current log context for the duration of BODY."
+  (parameterize ((current-log-context (append (current-log-context) ctx)))
+    body ...))

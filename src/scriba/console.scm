@@ -35,9 +35,20 @@
                               (string-append "["
                                              (strftime timestamp-format
                                                        (localtime (current-time)))
-                                             "] ") "")))
+                                             "] ") ""))
+               (dynamic-ctx (current-log-context))
+               (dynamic-pref (if (nil? dynamic-ctx) ""
+                                 (string-append (string-join (map (lambda (x)
+                                                                    (format #f
+                                                                            "[~a=~a]"
+                                                                            (car
+                                                                             x)
+                                                                            (cdr
+                                                                             x)))
+                                                                  dynamic-ctx)
+                                                             " ") " "))))
           (apply format #t
-                 (string-append pref time-pref msg) args)))))
+                 (string-append pref time-pref dynamic-pref msg) args)))))
 
   (make-filtered-logger #:name name
                         #:level level

@@ -59,6 +59,7 @@ When creating loggers you get all customization possibilities. This can be done 
 
 TODO: create auto configured logger automatically from environment variables and from local config file.
 
+
 ** Log levels
 
 A logging request is said to be enabled if its level is higher than or equal to the effective level of its logger. Otherwise, the request is said to be disabled.
@@ -69,6 +70,16 @@ A log request of level p issued to a logger having an effective level q, is enab
 
 ~trace~ < ~debug~ < ~info~ < ~warn~ < ~error~
 
+** Log context
+
+Many times it's useful to pass additional context to a certain log line, for observability and debugging.
+
+#+begin_src scheme
+(with-log-context '((request-id . "req-1234") (user . "alice"))
+  (log-info logger "Fetching database records...")
+  ;; Any deeper function calls that log will automatically include this context!
+  (do-some-work a b c))
+#+end_src
 
 * Runtime Dependencies
 
