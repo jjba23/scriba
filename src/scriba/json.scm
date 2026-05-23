@@ -20,29 +20,44 @@
   #:use-module (scriba scriba)
   #:export (scriba-json-logger))
 
+(define (get-time-field with-timestamp? format-string)
+  "Returns a timestamp alist entry, or an empty list if disabled."
+  (if with-timestamp?
+      `((time unquote
+              (strftime format-string
+                        (localtime (current-time)))))
+      '()))
+
+(define (get-name-field name)
+  "Returns a name alist entry, or an empty list if unnamed."
+  (if name
+      `((name unquote name))
+      '()))
+
 (define* (%make-scriba-json-logger #:key name
                                    (level (default-log-level))
                                    pretty?
                                    (with-timestamp? #t)
                                    (timestamp-format (default-time-format)))
+  
+  (define name-field
+    (get-name-field name))
+
   (define (make-json-printer lvl)
-    (lambda (msg . args)
-      (let* ((m (apply format #f msg args))
-             (level-fields `((level unquote lvl)))
-             (base-fields `((message unquote m)))
-             (name-fields (if name
-                              `((name unquote name))
-                              '()))
-             (time-fields (if with-timestamp?
-                              `((time unquote
-                                      (strftime timestamp-format
-                                                (localtime (current-time)))))
-                              '()))
-             (dynamic-ctx (current-log-context))
-             (fields (append level-fields name-fields base-fields time-fields dynamic-ctx))
-             (j (scm->json-string fields
-                                  #:pretty pretty?)))
-        (format #t "\n~a" j))))
+    (let ((level-field `((level unquote lvl))))
+      (lambda (msg . args)
+        (let* ((user-msg (apply format #f msg args))
+               (base-field `((message unquote user-msg)))
+               (time-field (get-time-field with-timestamp? timestamp-format))
+               (dynamic-ctx (current-log-context))
+
+               (fields (append level-field name-field time-field base-field
+                               dynamic-ctx))
+
+               (serialized-log (scm->json-string fields
+                                                 #:pretty pretty?)))
+          
+          (format #t "\n~a" serialized-log)))))
 
   (make-filtered-logger #:name name
                         #:level level
