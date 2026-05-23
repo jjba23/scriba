@@ -20,9 +20,9 @@
   #:export (scriba-console-logger))
 
 (define* (%make-scriba-console-logger #:key name
-                                      (level 'info)
+                                      (level (default-log-level))
                                       (with-timestamp? #t)
-                                      (timestamp-format human-time-format))
+                                      (timestamp-format (default-time-format)))
   (define logger-name-fragment
     (if name
         (format #f "[~a] " name) ""))

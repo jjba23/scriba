@@ -28,6 +28,8 @@
                                  human-time-format
                                  log-friendly-time-format
                                  is-in-log-level?
+                                 default-time-format
+                                 default-log-level
                                  memoize-logger))
 
 (define-syntax define-record-with-kw
@@ -92,6 +94,9 @@
 (define log-levels
   '(trace debug info warn error))
 
+(define default-log-level
+  (make-parameter 'info))
+
 (define (is-in-log-level? a b)
   "Is log level A allowed in a B context?"
   (and=> (memq b log-levels)
@@ -117,3 +122,6 @@
 
 (define log-friendly-time-format
   "%F %T %z")
+
+(define default-time-format
+  (make-parameter human-time-format))

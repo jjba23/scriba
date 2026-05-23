@@ -47,19 +47,21 @@ Or if you like JSON structured logging better:
 #+begin_src scheme
 (let* ((s (scriba-json-logger #:name 'json-logger
                               #:level 'info
-                              #:pretty #f)))
+                              #:pretty? #f)))
   (log-info s "2 + 2 = ~a"
             (+ 2 2))
   (log-warn s "something suspicious happened"))
 #+end_src
 
-It's worth noting that specific loggers may have specific configuration parameters found nowhere else.
+It's worth noting that specific loggers may have specific configuration parameters found nowhere else. All logger implementations share the same traits and supported functions. You can think of "logger" as the interface / API.
 
-If a logger is not assigned a level, then it inherits one from its closest ancestor with an assigned level, and otherwise will default to ~info~ (this varies per implementations)
+When creating loggers you get all customization possibilities. This can be done via keyword arguments. Additionally, you can use parameters to override defaults easily. See the ~(scriba scriba)~ module for more.
+
+TODO: create auto configured logger automatically from environment variables and from local config file.
 
 ** Log levels
 
-A logging request is said to be enabled if its level is higher than or equal to the effective level of its logger. Otherwise, the request is said to be disabled. As described previously, a logger without an assigned level will inherit one from its nearest ancestor. This rule is summarized below.
+A logging request is said to be enabled if its level is higher than or equal to the effective level of its logger. Otherwise, the request is said to be disabled.
 
 #+begin_quote
 A log request of level p issued to a logger having an effective level q, is enabled if p >= q.

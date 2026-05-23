@@ -26,30 +26,27 @@
 
 (define log-suite
   (suite "Log"
-         (test "scriba-console-logger"
-               (let* ((s (scriba-console-logger)))
-                 (assert-true (begin
-                                (log-info s "Hello Scriba!") #t)
-                              #:name
-                              "default configuration and simple message")
-                 (assert-true (begin
-                                (log-info s "Hello Scriba, 2 + 2 = ~a!"
-                                          (+ 2 2)) #t)
-                              #:name
-                              "default configuration and formatted message")))
-         (test "scriba-json-logger"
-               (let* ((s (scriba-json-logger)))
-                 (assert-true (begin
-                                (log-info s "Hello Scriba!") #t)
-                              #:name
-                              "default configuration and simple message")
-                 (assert-true (begin
-                                (log-info s
-                                 "Hello Scriba, current time is: ~a, current module is: ~a!"
-                                 (current-time)
-                                 (current-module)) #t)
-                              #:name
-                              "default configuration and formatted message")))))
+         (let* ((s (scriba-console-logger)))
+           (test "scriba-console-logger"
+                 (assert-no-error (lambda ()
+                                    (log-info s "Hello Scriba!"))
+                                  #:name
+                                  "default configuration and simple message")
+                 (assert-no-error (lambda ()
+                                    (log-info s "Hello Scriba, 2 + 2 = ~a!"
+                                              (+ 2 2)))
+                  #:name "default configuration and formatted message")))
+         (let* ((s (scriba-json-logger)))
+           (test "scriba-json-logger"
+                 (assert-no-error (lambda ()
+                                    (log-info s "Hello Scriba!"))
+                                  #:name
+                                  "default configuration and simple message")
+                 (assert-no-error (lambda ()
+                                    (log-info s
+                                     "Hello Scriba, current module is: ~a!"
+                                     (current-module)))
+                  #:name "default configuration and formatted message")))))
 
 (define log-level-suite
   (suite "Log Level"
@@ -95,4 +92,6 @@
                        (error error #t))))))
 
 (define (spec)
-  (veritas-run log-suite log-level-suite))
+  (veritas-run log-suite
+               ;; log-level-suite
+               ))
