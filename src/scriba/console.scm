@@ -19,36 +19,49 @@
   #:use-module (scriba scriba)
   #:export (scriba-console-logger))
 
+(define (format-timestamp with-timestamp? format-string)
+  "Returns a formatted timestamp string, or an empty string."
+  (if with-timestamp?
+      (format #f "[~a] "
+              (strftime format-string
+                        (localtime (current-time)))) ""))
+
+(define (format-context ctx)
+  "Converts an alist context into a bracketed string layout: [k=v] [k=v]."
+  (let ((mdc (map (lambda (pair)
+                    (format #f "[~a=~a]"
+                            (car pair)
+                            (cdr pair))) ctx)))
+    (if (nil? ctx) ""
+        (string-append (string-join mdc " ") " "))))
+
+(define (format-name name)
+  "Returns the formatted logger name, or an empty string."
+  (if name
+      (format #f "[~a] " name) ""))
+
 (define* (%make-scriba-console-logger #:key name
                                       (level (default-log-level))
                                       (with-timestamp? #t)
                                       (timestamp-format (default-time-format)))
-  (define logger-name-fragment
-    (if name
-        (format #f "[~a] " name) ""))
+  (define name-str
+    (format-name name))
 
   (define (make-console-printer lvl)
-    (let ((pref (string-append "\n["
-                               (symbol->string lvl) "] " logger-name-fragment)))
+    (let ((level-str (format #f "[~a] "
+                             (symbol->string lvl))))
       (lambda (msg . args)
-        (let* ((time-pref (if with-timestamp?
-                              (string-append "["
-                                             (strftime timestamp-format
-                                                       (localtime (current-time)))
-                                             "] ") ""))
-               (dynamic-ctx (current-log-context))
-               (dynamic-pref (if (nil? dynamic-ctx) ""
-                                 (string-append (string-join (map (lambda (x)
-                                                                    (format #f
-                                                                            "[~a=~a]"
-                                                                            (car
-                                                                             x)
-                                                                            (cdr
-                                                                             x)))
-                                                                  dynamic-ctx)
-                                                             " ") " "))))
-          (apply format #t
-                 (string-append pref time-pref dynamic-pref msg) args)))))
+        (let* ((time-str (format-timestamp with-timestamp? timestamp-format))
+               (ctx-str (format-context (current-log-context)))
+               (user-msg (apply format #f msg args)))
+          
+          (format #t
+                  "\n~a~a~a~a~a"
+                  level-str
+                  time-str
+                  name-str
+                  ctx-str
+                  user-msg)))))
 
   (make-filtered-logger #:name name
                         #:level level
