@@ -33,7 +33,8 @@
                                   #:name
                                   "default configuration and simple message")
                  (assert-no-error (lambda ()
-                                    (log-debug s "we should never see this since log level is not high enough!")
+                                    (log-debug s
+                                     "we should never see this since log level is not high enough!")
                                     (log-warn s "some kind of warning")
                                     (log-info s "Hello Scriba, 2 + 2 = ~a!"
                                               (+ 2 2)))
@@ -51,7 +52,8 @@
                                   #:name
                                   "default configuration and simple message")
                  (assert-no-error (lambda ()
-                                    (log-debug s "we should never see this since log level is not high enough!")
+                                    (log-debug s
+                                     "we should never see this since log level is not high enough!")
                                     (log-warn s "some kind of warning")
                                     (log-info s
                                      "Hello Scriba, current module is: ~a!"

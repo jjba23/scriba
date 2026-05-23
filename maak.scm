@@ -33,7 +33,8 @@
 (define project-name
   'scriba)
 
-(define hot-reload-file-types '(scm))
+(define hot-reload-file-types
+  '(scm))
 
 ;; ====== Maak file tasks ======
 
