@@ -6,7 +6,7 @@
 [[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]] [[https://jointhefreeworld.org/ggg/dist/gnu-guix.svg]]
 [[https://jointhefreeworld.org/ggg/dist/license-lgpl3+.svg]]    [[https://jointhefreeworld.org/ggg/dist/license-fdl13+.svg]]
 
-A Lisp logging library with flexibility, performance and configuration in mind, powered by Guile Scheme.
+A Lisp structured logging library with flexibility, performance and configuration in mind, powered by Guile Scheme.
 
 If you like my work, please support me by [[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with a lot of motivation.
 
@@ -14,7 +14,7 @@ If you like my work, please support me by [[https://bmc.link/jjbigorra][buying m
 
 * Why Scriba?
 
-A primary advantage of Scriba over standard ~display~, ~write~, or ~println~ procedures is fine-grained control over log routing, formatting and filtering.
+A primary advantage of Scriba over standard ~display~, ~write~, or ~println~ procedures is fine-grained control over log routing, formatting and filtering, with the addition of structured context in logs.
 
 By separating formatting, severity levels, and output destinations, Scriba offers modularity that makes extending the library or writing your own custom loggers trivial.
 
@@ -41,6 +41,18 @@ This is especially useful for maintaining different logging behaviors between de
   (with-log-context `((key-1 . value-1))
                     (log-info s "Message with context")))
 #+end_src
+
+Example console logging:
+#+begin_example
+[INFO] [2026-05-24 11:23:06 CEST] Hello Scriba, 2 + 2 = 4!
+[INFO] [2026-05-24 11:23:06 CEST] [sample-1=value-1] Some log with context
+#+end_example
+
+Example JSON logging:
+#+begin_example
+{"level":"INFO","time":"2026-05-24 11:23:06 CEST","message":"Some log with context","sample-2":"value-2"}
+{"level":"WARNING","time":"2026-05-24 11:23:06 CEST","message":"some kind of warning"}
+#+end_example
 
 *Note:* Logger creation is memoized. Subsequent calls to create the same logger (even elsewhere in your codebase) are instant because the result is only computed once.
 
