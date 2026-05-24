@@ -6,7 +6,7 @@
 [[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]] [[https://jointhefreeworld.org/ggg/dist/gnu-guix.svg]]
 [[https://jointhefreeworld.org/ggg/dist/license-lgpl3+.svg]]    [[https://jointhefreeworld.org/ggg/dist/license-fdl13+.svg]]
 
-[🚧 WIP] A powerful logging library for Guile Scheme with flexibility and configuration in mind
+A Lisp logging library with flexibility, performance and configuration in mind, powered by Guile Scheme.
 
 If you like my work, please support me by [[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with a lot of motivation.
 
@@ -34,6 +34,41 @@ A logger may be configured to the user's needs, with parameters including name, 
 
 You can find multiple examples, from simple to complex, in the project's unit tests: [[file:test/veritas/unit/log-spec.scm]]
 
+----------------
+
+** Auto-configured logger
+
+You are free to use your preferred logger directly, but for additional flexibility, you can use the auto logger, which reads environment variables (and TODO futurely config file), to auto-determine logger to use, and which settings. This can be specially useful for example to have different log config in dev or in production. It also can be useful to simplify configuration of scriba.
+
+Using the auto-logger is really easy:
+
+#+begin_src scheme
+(define-module (my-module)
+  #:use-module (scriba auto)
+  #:use-module (scriba scriba))
+
+(let* ((s (scriba-auto-logger)))
+  (log-info s "Hello Scriba!")
+  (with-log-context `((key-1 . value-1))
+                    (log-info s "Log with context")))
+#+end_src
+
+As an added nicety, logger creation is memoized, and that means that subsequent calls (even in other places in your code) to create the same logger will be instant, as the result is /cached/.
+
+The auto logger checks for ~SCRIBA~ prefixed environment variables first (to allow application-specific overrides) and falls back to standard LOG_ variables.
+
+- ~SCRIBA_LOGGER~ / ~LOGGER~: Expects "json" or "console". Defaults to "console".
+- ~SCRIBA_LOG_LEVEL~ / ~LOG_LEVEL~: Expects a string like "debug", "info", "error", etc. It converts this to a lowercase symbol.
+- ~SCRIBA_JSON_PRETTY~ / ~LOG_JSON_PRETTY~: Parses "true" or "1" to enable pretty-printing on the JSON logger backend.
+- ~SCRIBA_WITH_TIMESTAMP~ / ~LOG_WITH_TIMESTAMP~: Parses "true" or "1" to enable printing timestamps in the log lines.
+- ~SCRIBA_TIMESTAMP_FORMAT~ / ~LOG_TIMESTAMP_FORMAT~: Expects a string with the timestamp format to use in ~strftime~ (e.g. ~"%F %T %z"~).
+
+Because the ~get-env-*~ functions are used as the default expressions in the ~#:key~ arguments of ~%make-scriba-auto-logger~, you can still programmatically override the environment variables by explicitly passing ~#:level 'trace~ when calling ~(scriba-auto-logger)~ allowing ultimate customization, even with the auto-logger.
+
+--------------
+
+** Specific loggers
+
 Creating a logger is as simple as:
 #+begin_src scheme
 (let* ((s (scriba-console-logger #:name 'console-logger
@@ -57,20 +92,7 @@ It's worth noting that specific loggers may have specific configuration paramete
 
 When creating loggers you get all customization possibilities. This can be done via keyword arguments. Additionally, you can use parameters to override defaults easily. See the ~(scriba scriba)~ module for more.
 
-** Auto-configured logger
-
-You are free to use your preferred logger directly, but for additional flexibility, you can use the auto logger, which reads environment variables (and TODO futurely config file), to auto-determine logger to use, and which settings. This can be specially useful for example to have different log config in dev or in production. It also can be useful to simplify configuration of scriba.
-
-The auto logger checks for ~SCRIBA~ prefixed environment variables first (to allow application-specific overrides) and falls back to standard LOG_ variables.
-
-- ~SCRIBA_LOGGER~ / ~LOGGER~: Expects "json" or "console". Defaults to "console".
-- ~SCRIBA_LOG_LEVEL~ / ~LOG_LEVEL~: Expects a string like "debug", "info", "error", etc. It converts this to a lowercase symbol.
-- ~SCRIBA_JSON_PRETTY~ / ~LOG_JSON_PRETTY~: Parses "true" or "1" to enable pretty-printing on the JSON logger backend.
-- ~SCRIBA_WITH_TIMESTAMP~ / ~LOG_WITH_TIMESTAMP~: Parses "true" or "1" to enable printing timestamps in the log lines.
-- ~SCRIBA_TIMESTAMP_FORMAT~ / ~LOG_TIMESTAMP_FORMAT~: Expects a string with the timestamp format to use in ~strftime~ (e.g. ~"%F %T %z"~).
-
-Because the ~get-env-*~ functions are used as the default expressions in the ~#:key~ arguments of ~%make-scriba-auto-logger~, you can still programmatically override the environment variables by explicitly passing ~#:level 'trace~ when calling ~(scriba-auto-logger)~ allowing ultimate customization, even with the auto-logger.
-
+------------------
 
 ** Log levels
 
@@ -81,6 +103,8 @@ A log action of level p issued to a logger having an effective level q, is enabl
 #+end_quote
 
 ~trace~ < ~debug~ < ~info~ < ~success~ < ~warn~ < ~error~ < ~critical~
+
+-----------------
 
 ** Log context
 
