@@ -18,10 +18,9 @@ A primary advantage of Scriba over standard ~display~, ~write~, or ~println~ pro
 
 By separating formatting, severity levels, and output destinations, Scriba offers modularity that makes extending the library or writing your own custom loggers trivial.
 
-Scriba is built around the core abstraction of a *logger*. It achieves high performance by memoizing computations and leveraging compile-time macro expansions.
+Scriba is built around the core abstraction of a *logger*. It achieves high performance by memoizing computations and leveraging compile-time macro expansions (see [[file:src/scriba/scriba.scm][scriba.scm]].
 
-Find the complete, technical Guile Scheme API documentation here:
-[[https://jointhefreeworld.org/api-docs/scriba/API.html]]
+Find the complete, technical Guile Scheme  [[https://jointhefreeworld.org/api-docs/scriba/API.html][API documentation here]]
 
 -----------------------
 
