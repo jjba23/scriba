@@ -44,7 +44,8 @@
     (get-name-field name))
 
   (define (make-json-printer lvl)
-    (let ((level-field `((level unquote lvl))))
+    (let ((level-field `((level unquote
+                                (string-upcase (symbol->string lvl))))))
       (lambda (msg . args)
         (let* ((user-msg (apply format #f msg args))
                (base-field `((message unquote user-msg)))
@@ -64,8 +65,10 @@
                         #:log-trace-proc (make-json-printer 'trace)
                         #:log-debug-proc (make-json-printer 'debug)
                         #:log-info-proc (make-json-printer 'info)
-                        #:log-warn-proc (make-json-printer 'warn)
-                        #:log-error-proc (make-json-printer 'error)))
+                        #:log-success-proc (make-json-printer 'success)
+                        #:log-warning-proc (make-json-printer 'warning)
+                        #:log-error-proc (make-json-printer 'error)
+                        #:log-critical-proc (make-json-printer 'critical)))
 
 (define scriba-json-logger
   (memoize-logger %make-scriba-json-logger))

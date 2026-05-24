@@ -49,7 +49,7 @@
 
   (define (make-console-printer lvl)
     (let ((level-str (format #f "[~a] "
-                             (symbol->string lvl))))
+                             (string-upcase (symbol->string lvl)))))
       (lambda (msg . args)
         (let* ((time-str (format-timestamp with-timestamp? timestamp-format))
                (ctx-str (format-context (current-log-context)))
@@ -68,8 +68,10 @@
                         #:log-trace-proc (make-console-printer 'trace)
                         #:log-debug-proc (make-console-printer 'debug)
                         #:log-info-proc (make-console-printer 'info)
-                        #:log-warn-proc (make-console-printer 'warn)
-                        #:log-error-proc (make-console-printer 'error)))
+                        #:log-success-proc (make-console-printer 'success)
+                        #:log-warning-proc (make-console-printer 'warning)
+                        #:log-error-proc (make-console-printer 'error)
+                        #:log-critical-proc (make-console-printer 'critical)))
 
 (define scriba-console-logger
   (memoize-logger %make-scriba-console-logger))

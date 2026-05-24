@@ -50,7 +50,7 @@ Or if you like JSON structured logging better:
                               #:pretty? #f)))
   (log-info s "2 + 2 = ~a"
             (+ 2 2))
-  (log-warn s "something suspicious happened"))
+  (log-warning s "something suspicious happened"))
 #+end_src
 
 It's worth noting that specific loggers may have specific configuration parameters found nowhere else. All logger implementations share the same traits and supported functions. You can think of "logger" as the interface / API.
@@ -62,13 +62,13 @@ TODO: create auto configured logger automatically from environment variables and
 
 ** Log levels
 
-A logging request is said to be enabled if its level is higher than or equal to the effective level of its logger. Otherwise, the request is said to be disabled.
+A logging action is said to be enabled if its level is higher than or equal to the effective level of its logger.
 
 #+begin_quote
-A log request of level p issued to a logger having an effective level q, is enabled if p >= q.
+A log action of level p issued to a logger having an effective level q, is enabled if p >= q.
 #+end_quote
 
-~trace~ < ~debug~ < ~info~ < ~warn~ < ~error~
+~trace~ < ~debug~ < ~info~ < ~success~ < ~warn~ < ~error~ < ~critical~
 
 ** Log context
 

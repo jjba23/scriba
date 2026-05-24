@@ -35,7 +35,8 @@
                  (assert-no-error (lambda ()
                                     (log-debug s
                                      "we should never see this since log level is not high enough!")
-                                    (log-warn s "some kind of warning")
+                                    (log-warning s "some kind of warning")
+                                    (log-success s "yes! we made it")
                                     (log-info s "Hello Scriba, 2 + 2 = ~a!"
                                               (+ 2 2)))
                   #:name "default configuration and formatted message")
@@ -54,7 +55,8 @@
                  (assert-no-error (lambda ()
                                     (log-debug s
                                      "we should never see this since log level is not high enough!")
-                                    (log-warn s "some kind of warning")
+                                    (log-warning s "some kind of warning")
+                                    (log-success s "yes! we made it")
                                     (log-info s
                                      "Hello Scriba, current module is: ~a!"
                                      (current-module)))
@@ -85,31 +87,15 @@
                                                  (cadr c)))))
                      '((trace trace #t)
                        (trace debug #f)
-                       (trace info #f)
-                       (trace warn #f)
-                       (trace error #f)
-                       (debug trace #t)
-                       (debug debug #t)
-                       (debug info #f)
-                       (debug warn #f)
-                       (debug error #f)
+                       (debug critical #f)
                        (info trace #t)
-                       (info debug #t)
-                       (info info #t)
-                       (info warn #f)
                        (info error #f)
-                       (warn trace #t)
-                       (warn debug #t)
-                       (warn info #t)
-                       (warn warn #t)
-                       (warn error #f)
-                       (error trace #t)
-                       (error debug #t)
-                       (error info #t)
-                       (error warn #t)
+                       (success info #t)
+                       (warning trace #t)
+                       (warning debug #t)
+                       (critical info #t)
+                       (error warning #t)
                        (error error #t))))))
 
 (define (spec)
-  (veritas-run log-suite
-               ;; log-level-suite
-               ))
+  (veritas-run log-suite log-level-suite))

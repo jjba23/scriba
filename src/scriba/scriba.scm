@@ -21,8 +21,10 @@
   #:export (make-filtered-logger log-trace
                                  log-debug
                                  log-info
-                                 log-warn
+                                 log-success
+                                 log-warning
                                  log-error
+                                 log-critical
                                  log-levels
                                  iso-8601-time-format
                                  human-time-format
@@ -53,8 +55,10 @@
                        (log-trace-proc logger-log-trace)
                        (log-debug-proc logger-log-debug)
                        (log-info-proc logger-log-info)
-                       (log-warn-proc logger-log-warn)
-                       (log-error-proc logger-log-error))
+                       (log-success-proc logger-log-success)
+                       (log-warning-proc logger-log-warning)
+                       (log-error-proc logger-log-error)
+                       (log-critical-proc logger-log-critical))
 
 (define log-unit
   (lambda (msg . args)
@@ -65,8 +69,10 @@
                                log-trace-proc
                                log-debug-proc
                                log-info-proc
-                               log-warn-proc
-                               log-error-proc)
+                               log-success-proc
+                               log-warning-proc
+                               log-error-proc
+                               log-critical-proc)
   "Creates a logger, mapping excluded log levels to log-unit."
   (define (maybe-proc target-level proc)
     (if (is-in-log-level? target-level level) proc log-unit))
@@ -76,8 +82,10 @@
              #:log-trace-proc (maybe-proc 'trace log-trace-proc)
              #:log-debug-proc (maybe-proc 'debug log-debug-proc)
              #:log-info-proc (maybe-proc 'info log-info-proc)
-             #:log-warn-proc (maybe-proc 'warn log-warn-proc)
-             #:log-error-proc (maybe-proc 'error log-error-proc)))
+             #:log-success-proc (maybe-proc 'success log-success-proc)
+             #:log-warning-proc (maybe-proc 'warning log-warning-proc)
+             #:log-error-proc (maybe-proc 'error log-error-proc)
+             #:log-critical-proc (maybe-proc 'critical log-critical-proc)))
 
 (define-syntax define-logger-method
   (syntax-rules ()
@@ -90,11 +98,13 @@
 (define-logger-method log-trace logger-log-trace "Log TRACE")
 (define-logger-method log-debug logger-log-debug "Log DEBUG")
 (define-logger-method log-info logger-log-info "Log INFO")
-(define-logger-method log-warn logger-log-warn "Log WARN")
+(define-logger-method log-success logger-log-success "Log SUCCESS")
+(define-logger-method log-warning logger-log-warning "Log WARNING")
 (define-logger-method log-error logger-log-error "Log ERROR")
+(define-logger-method log-critical logger-log-critical "Log CRITICAL")
 
 (define log-levels
-  '(trace debug info warn error))
+  '(trace debug info success warning error critical))
 
 (define default-log-level
   (make-parameter 'info))
