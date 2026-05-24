@@ -18,7 +18,7 @@
 (define-module (scriba json)
   #:use-module (json)
   #:use-module (scriba scriba)
-  #:export (scriba-json-logger))
+  #:export (scriba-json-logger default-json-pretty?))
 
 (define (get-time-field with-timestamp? format-string)
   "Returns a timestamp alist entry, or an empty list if disabled."
@@ -72,3 +72,6 @@
 
 (define scriba-json-logger
   (memoize-logger %make-scriba-json-logger))
+
+(define default-json-pretty?
+  (make-parameter #f))

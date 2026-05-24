@@ -32,6 +32,8 @@
                                  is-in-log-level?
                                  default-time-format
                                  default-log-level
+                                 default-logger
+                                 default-with-timestamp?
                                  with-log-context
                                  current-log-context
                                  memoize-logger))
@@ -106,9 +108,6 @@
 (define log-levels
   '(trace debug info success warning error critical))
 
-(define default-log-level
-  (make-parameter 'info))
-
 (define (is-in-log-level? a b)
   "Is log level A allowed in a B context?"
   (and=> (memq b log-levels)
@@ -135,9 +134,6 @@
 (define log-friendly-time-format
   "%F %T %z")
 
-(define default-time-format
-  (make-parameter human-time-format))
-
 (define current-log-context
   (make-parameter '()))
 
@@ -145,3 +141,15 @@
   "Dynamically append CTX (an alist) to the current log context for the duration of BODY."
   (parameterize ((current-log-context (append (current-log-context) ctx)))
     body ...))
+
+(define default-log-level
+  (make-parameter 'info))
+
+(define default-time-format
+  (make-parameter human-time-format))
+
+(define default-logger
+  (make-parameter "console"))
+
+(define default-with-timestamp?
+  (make-parameter #t))
