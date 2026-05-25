@@ -67,7 +67,7 @@ The auto-logger checks for ~SCRIBA_~ prefixed environment variables first (allow
 | ~SCRIBA_JSON_PRETTY~      | ~LOG_JSON_PRETTY~      | Set to ~true~ or ~1~ to pretty-print JSON logs.              | ~#f~         |
 | ~SCRIBA_WITH_TIMESTAMP~   | ~LOG_WITH_TIMESTAMP~   | Set to ~true~ or ~1~ to include timestamps.                  | ~#t~         |
 | ~SCRIBA_TIMESTAMP_FORMAT~ | ~LOG_TIMESTAMP_FORMAT~ | The ~strftime~ format string (e.g., ~"%F %T %z"~).           | ~"%F %T %Z"~ |
-| ~SCRIBA_OUT_PORT~         | ~LOG_OUT_PORT~         | The output port to be used (e.g. ~stdout~ or TODO ~file~)    | ~(current-output-port)~   |
+| ~SCRIBA_OUT_PORT~         | ~LOG_OUT_PORT~         | The output port to be used (e.g. ~stdout~ or ~stderr~ or TODO ~file~) | ~(current-output-port)~   |
 | ~SCRIBA_FLUSH_PORT~       | ~LOG_FLUSH_PORT~       | Set to ~true~ or ~1~ to force port flushing every log action | ~#t~         |
 
 Because in its implementation, the ~get-env-*~ functions act as defaults for the ~#:key~ arguments in ~%make-scriba-auto-logger~, you can easily override the environment programmatically: ~(scriba-auto-logger #:level 'trace)~.

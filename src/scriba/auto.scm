@@ -80,6 +80,8 @@
         (match (string->symbol (string-downcase env-val))
           (('stdout)
            (current-output-port))
+          (('stderr)
+           (current-error-port))
           (_ (default-out-port)))
         (default-out-port))))
 
