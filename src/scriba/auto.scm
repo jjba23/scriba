@@ -16,6 +16,7 @@
 ;; along with scriba.  If not, see <https://www.gnu.org/licenses/>.
 
 (define-module (scriba auto)
+  #:use-module (ice-9 match)
   #:use-module (scriba scriba)
   #:use-module (scriba json)
   #:use-module (scriba console)
@@ -76,7 +77,10 @@
   (let ((env-val (or (getenv "SCRIBA_OUT_PORT")
                      (getenv "LOG_OUT_PORT"))))
     (if env-val
-        (string->symbol (string-downcase env-val))
+        (match (string->symbol (string-downcase env-val))
+          (('stdout)
+           (current-output-port))
+          (_ (default-out-port)))
         (default-out-port))))
 
 (define* (%make-scriba-auto-logger #:key name
