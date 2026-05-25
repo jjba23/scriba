@@ -34,7 +34,7 @@
   (let ((env-val (or (getenv "SCRIBA_LOGGER")
                      (getenv "LOGGER"))))
     (if env-val
-        (string-downcase env-val)
+        (string->symbol (string-downcase env-val))
         (default-logger))))
 
 (define (get-env-timestamp-format)
@@ -69,7 +69,7 @@
                                    (pretty? (get-env-json-pretty?)))
   "Creates a logger automatically configured by environment variables."
   (let ((log-format (get-env-logger)))
-    (if (string=? log-format "json")
+    (if (eq? log-format 'json)
         (scriba-json-logger #:name name
                             #:level level
                             #:pretty? pretty?

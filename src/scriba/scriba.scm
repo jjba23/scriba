@@ -210,7 +210,7 @@ in memory, preventing redundant instantiations and reducing overhead."
   (make-parameter human-time-format))
 
 (define default-logger
-  (make-parameter "console"))
+  (make-parameter 'console))
 
 (define default-with-timestamp?
   (make-parameter #t))
