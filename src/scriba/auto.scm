@@ -62,21 +62,45 @@
             (string=? env-val "1"))
         (default-with-timestamp?))))
 
+(define (get-env-flush-port?)
+  "Checks if the logger should flush the port every log action, based on the environment."
+  (let ((env-val (or (getenv "SCRIBA_FLUSH_PORT")
+                     (getenv "LOG_FLUSH_PORT"))))
+    (if env-val
+        (or (string=? (string-downcase env-val) "true")
+            (string=? env-val "1"))
+        (default-flush-port?))))
+
+(define (get-env-out-port)
+  "Parses the output port based on the environment."
+  (let ((env-val (or (getenv "SCRIBA_OUT_PORT")
+                     (getenv "LOG_OUT_PORT"))))
+    (if env-val
+        (string->symbol (string-downcase env-val))
+        (default-out-port))))
+
 (define* (%make-scriba-auto-logger #:key name
                                    (level (get-env-log-level))
+                                   (out-port (get-env-out-port))
                                    (with-timestamp? (get-env-with-timestamp?))
                                    (timestamp-format (get-env-timestamp-format))
+                                   (flush-port? (get-env-flush-port?))
                                    (pretty? (get-env-json-pretty?)))
   "Creates a logger automatically configured by environment variables."
   (let ((log-format (get-env-logger)))
-    (if (eq? log-format 'json)
+    (if (eq? log-format
+             'json)
         (scriba-json-logger #:name name
                             #:level level
+                            #:out-port out-port
                             #:pretty? pretty?
+                            #:flush-port? flush-port?
                             #:with-timestamp? with-timestamp?
                             #:timestamp-format timestamp-format)
         (scriba-console-logger #:name name
                                #:level level
+                               #:out-port out-port
+                               #:flush-port? flush-port?
                                #:with-timestamp? with-timestamp?
                                #:timestamp-format timestamp-format))))
 

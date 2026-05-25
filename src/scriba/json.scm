@@ -37,9 +37,11 @@
 (define* (%make-scriba-json-logger #:key name
                                    (level (default-log-level))
                                    pretty?
-                                   (with-timestamp? #t)
-                                   (timestamp-format (default-time-format)))
-  
+                                   (with-timestamp? (default-with-timestamp?))
+                                   (timestamp-format (default-time-format))
+                                   (out-port (default-out-port))
+                                   (flush-port? (default-flush-port?)))
+
   (define name-field
     (get-name-field name))
 
@@ -57,8 +59,10 @@
 
                (serialized-log (scm->json-string fields
                                                  #:pretty pretty?)))
-          
-          (format #t "\n~a" serialized-log)))))
+
+          (format out-port "\n~a" serialized-log)
+          (when flush-port?
+            (force-output out-port))))))
 
   (make-filtered-logger #:name name
                         #:level level

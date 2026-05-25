@@ -42,8 +42,10 @@
 
 (define* (%make-scriba-console-logger #:key name
                                       (level (default-log-level))
-                                      (with-timestamp? #t)
-                                      (timestamp-format (default-time-format)))
+                                      (with-timestamp? (default-with-timestamp?))
+                                      (timestamp-format (default-time-format))
+                                      (out-port (default-out-port))
+                                      (flush-port? (default-flush-port?)))
   (define name-str
     (format-name name))
 
@@ -54,14 +56,16 @@
         (let* ((time-str (format-timestamp with-timestamp? timestamp-format))
                (ctx-str (format-context (current-log-context)))
                (user-msg (apply format #f msg args)))
-          
-          (format #t
+
+          (format out-port
                   "\n~a~a~a~a~a"
                   level-str
                   time-str
                   name-str
                   ctx-str
-                  user-msg)))))
+                  user-msg)
+          (when flush-port?
+            (force-output out-port))))))
 
   (make-filtered-logger #:name name
                         #:level level

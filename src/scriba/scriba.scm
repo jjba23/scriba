@@ -34,6 +34,8 @@
                                  default-log-level
                                  default-logger
                                  default-with-timestamp?
+                                 default-out-port
+                                 default-flush-port?
                                  with-log-context
                                  current-log-context
                                  memoize-logger))
@@ -213,4 +215,10 @@ in memory, preventing redundant instantiations and reducing overhead."
   (make-parameter 'console))
 
 (define default-with-timestamp?
+  (make-parameter #t))
+
+(define default-out-port
+  (make-parameter (current-output-port)))
+
+(define default-flush-port?
   (make-parameter #t))
