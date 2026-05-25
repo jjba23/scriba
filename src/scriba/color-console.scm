@@ -42,7 +42,7 @@
     ((critical)
      "\x1b[1;31m") ;Bold Red
     (else "")))
- ; Default
+; Default
 
 (define (format-timestamp with-timestamp? format-string)
   "Returns a dimmed formatted timestamp string, or an empty string."
