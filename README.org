@@ -74,6 +74,10 @@ Because in its implementation, the ~get-env-*~ functions act as defaults for the
 
 ------------------------
 
+[[https://jointhefreeworld.org/static-assets/scriba/scriba_small.png]]
+
+----------
+
 * Core Concepts
 
 Available loggers: ~console~ , ~color-console~ and ~json~
