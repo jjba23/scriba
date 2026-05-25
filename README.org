@@ -62,7 +62,7 @@ The auto-logger checks for ~SCRIBA_~ prefixed environment variables first (allow
 
 | Scriba Env Var          | Standard Env Var     | Description                                              | Default    |
 |-------------------------+----------------------+----------------------------------------------------------+------------|
-| ~SCRIBA_LOGGER~           | ~LOGGER~               | The logger backend to use (~console~ or ~json~).             | ~console~    |
+| ~SCRIBA_LOGGER~           | ~LOGGER~               | The logger backend to use (~console~ , ~color-console~ or ~json~). | ~console~    |
 | ~SCRIBA_LOG_LEVEL~        | ~LOG_LEVEL~            | Minimum severity level (e.g., ~debug~, ~info~, ~error~).       | ~info~       |
 | ~SCRIBA_JSON_PRETTY~      | ~LOG_JSON_PRETTY~      | Set to ~true~ or ~1~ to pretty-print JSON logs.              | ~#f~         |
 | ~SCRIBA_WITH_TIMESTAMP~   | ~LOG_WITH_TIMESTAMP~   | Set to ~true~ or ~1~ to include timestamps.                  | ~#t~         |
@@ -75,6 +75,8 @@ Because in its implementation, the ~get-env-*~ functions act as defaults for the
 ------------------------
 
 * Core Concepts
+
+Available loggers: ~console~ , ~color-console~ and ~json~
 
 ** Specific Loggers
 Loggers are (optionally named) entities responsible for emitting logs. They act as the primary interface between your application and Scriba. If you prefer to have more control and bypass the auto-logger, you can instantiate specific loggers directly.

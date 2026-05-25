@@ -19,6 +19,7 @@
   #:use-module (ice-9 match)
   #:use-module (scriba scriba)
   #:use-module (scriba json)
+  #:use-module (scriba color-console)
   #:use-module (scriba console)
   #:export (scriba-auto-logger))
 
@@ -31,7 +32,7 @@
         (default-log-level))))
 
 (define (get-env-logger)
-  "Parses the log format ('console' or 'json') from the environment."
+  "Parses the log format ('console', 'color-console' or 'json') from the environment."
   (let ((env-val (or (getenv "SCRIBA_LOGGER")
                      (getenv "LOGGER"))))
     (if env-val
@@ -94,21 +95,30 @@
                                    (pretty? (get-env-json-pretty?)))
   "Creates a logger automatically configured by environment variables."
   (let ((log-format (get-env-logger)))
-    (if (eq? log-format
-             'json)
-        (scriba-json-logger #:name name
-                            #:level level
-                            #:out-port out-port
-                            #:pretty? pretty?
-                            #:flush-port? flush-port?
-                            #:with-timestamp? with-timestamp?
-                            #:timestamp-format timestamp-format)
-        (scriba-console-logger #:name name
-                               #:level level
-                               #:out-port out-port
-                               #:flush-port? flush-port?
-                               #:with-timestamp? with-timestamp?
-                               #:timestamp-format timestamp-format))))
+    (cond
+      ((eq? log-format
+            'json)
+       (scriba-json-logger #:name name
+                           #:level level
+                           #:out-port out-port
+                           #:pretty? pretty?
+                           #:flush-port? flush-port?
+                           #:with-timestamp? with-timestamp?
+                           #:timestamp-format timestamp-format))
+      ((eq? log-format
+            'color-console)
+       (scriba-color-console-logger #:name name
+                                    #:level level
+                                    #:out-port out-port
+                                    #:flush-port? flush-port?
+                                    #:with-timestamp? with-timestamp?
+                                    #:timestamp-format timestamp-format))
+      (else (scriba-console-logger #:name name
+                                   #:level level
+                                   #:out-port out-port
+                                   #:flush-port? flush-port?
+                                   #:with-timestamp? with-timestamp?
+                                   #:timestamp-format timestamp-format)))))
 
 (define scriba-auto-logger
   (memoize-logger %make-scriba-auto-logger))

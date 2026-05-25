@@ -1,0 +1,111 @@
+;; scriba
+
+;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
+
+;; scriba is free software: you can redistribute it and/or modify
+;; it under the terms of the Lesser GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; scriba is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; Lesser GNU General Public License for more details.
+
+;; You should have received a copy of the Lesser GNU General Public License
+;; along with scriba.  If not, see <https://www.gnu.org/licenses/>.
+
+(define-module (scriba color-console)
+  #:use-module (scriba scriba)
+  #:export (scriba-color-console-logger))
+
+(define ansi-reset
+  "\x1b[0m")
+(define ansi-dim
+  "\x1b[2m")
+
+(define (level->color lvl)
+  "Maps a log level symbol to its corresponding ANSI color escape code."
+  (case lvl
+    ((trace)
+     "\x1b[90m") ;Bright Black / Gray
+    ((debug)
+     "\x1b[36m") ;Cyan
+    ((info)
+     "\x1b[34m") ;Blue
+    ((success)
+     "\x1b[32m") ;Green
+    ((warning)
+     "\x1b[33m") ;Yellow
+    ((error)
+     "\x1b[31m") ;Red
+    ((critical)
+     "\x1b[1;31m") ;Bold Red
+    (else "")))
+ ; Default
+
+(define (format-timestamp with-timestamp? format-string)
+  "Returns a dimmed formatted timestamp string, or an empty string."
+  (if with-timestamp?
+      (format #f "~a[~a]~a " ansi-dim
+              (strftime format-string
+                        (localtime (current-time))) ansi-reset) ""))
+
+(define (format-context ctx)
+  "Converts an alist context into a dimmed bracketed string layout."
+  (let ((mdc (map (lambda (pair)
+                    (format #f "[~a=~a]"
+                            (car pair)
+                            (cdr pair))) ctx)))
+    (if (nil? ctx) ""
+        (string-append ansi-dim
+                       (string-join mdc " ") ansi-reset " "))))
+
+(define (format-name name)
+  "Returns the dimmed formatted logger name, or an empty string."
+  (if name
+      (format #f "~a[~a]~a " ansi-dim name ansi-reset) ""))
+
+(define* (%make-scriba-color-console-logger #:key name
+                                            (level (default-log-level))
+                                            (with-timestamp? (default-with-timestamp?))
+                                            (timestamp-format (default-time-format))
+                                            (out-port (default-out-port))
+                                            (flush-port? (default-flush-port?)))
+  (define name-str
+    (format-name name))
+
+  (define (make-color-printer lvl)
+    (let* ((color (level->color lvl))
+           (level-str (format #f "~a[~a]~a " color
+                              (string-upcase (symbol->string lvl)) ansi-reset)))
+      (lambda (msg . args)
+        (let* ((time-str (format-timestamp with-timestamp? timestamp-format))
+               (ctx-str (format-context (current-log-context)))
+               (user-msg (apply format #f msg args)))
+          
+          (format out-port
+                  "\n~a~a~a~a~a~a~a"
+                  level-str ;Colored e.g., [INFO]
+                  time-str ;Dimmed
+                  name-str ;Dimmed
+                  ctx-str ;Dimmed
+                  color ;Start color for the user message
+                  user-msg ;Actual message
+                  ansi-reset) ;Reset terminal color at the end of the line
+          
+          (when flush-port?
+            (force-output out-port))))))
+
+  (make-filtered-logger #:name name
+                        #:level level
+                        #:log-trace-proc (make-color-printer 'trace)
+                        #:log-debug-proc (make-color-printer 'debug)
+                        #:log-info-proc (make-color-printer 'info)
+                        #:log-success-proc (make-color-printer 'success)
+                        #:log-warning-proc (make-color-printer 'warning)
+                        #:log-error-proc (make-color-printer 'error)
+                        #:log-critical-proc (make-color-printer 'critical)))
+
+(define scriba-color-console-logger
+  (memoize-logger %make-scriba-color-console-logger))
