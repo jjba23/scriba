@@ -44,15 +44,17 @@
 
 (define (repl)
   "Development REPL."
-  (manifest-shell '("guile -L ./src"
-                    "-c '((@ (ares server) run-nrepl-server))'")))
+  (time-machine-manifest-shell '("guile -L ./src"
+                                 "-c '((@ (ares server) run-nrepl-server))'")))
 
 (define (docs)
   "Generate technical API documentation for Scriba."
   (delete-file-recursively "doc")
-  (manifest-shell (list (~ "documenta api ./src/~a && " project-name)
-                        (~ "texi2any -v --html --css-ref=~a" api-docs-css-url)
-                        "./doc/api/index.texi"))
+  (time-machine-manifest-shell (list (~ "documenta api ./src/~a && "
+                                        project-name)
+                                     (~ "texi2any -v --html --css-ref=~a"
+                                        api-docs-css-url)
+                                     "./doc/api/index.texi"))
   (mv "./index" "./doc/api-dist"))
 
 (define (deploy)
@@ -65,19 +67,20 @@
 
 (define (test)
   "Run project's tests."
-  (manifest-shell (list "guile -L ./src -L ./test"
-                        "-c '((@ (veritas runner) run-tests))'")))
+  (time-machine-manifest-shell (list "guile -L ./src -L ./test"
+                                     "-c '((@ (veritas runner) run-tests))'")))
 
 (define (hot-reload)
   "Hot-reloading developer's setup."
-  (manifest-shell (list "watchexec 'maak test'"
-                        "--clear"
-                        (~ "--exts ~a"
-                           (string-join (map symbol->string
-                                             hot-reload-file-types) ","))
-                        "--on-busy-update=restart"
-                        "--shell bash"
-                        "--watch .")))
+  (time-machine-manifest-shell (list "watchexec 'maak test'"
+                                     "--clear"
+                                     (~ "--exts ~a"
+                                        (string-join (map symbol->string
+                                                      hot-reload-file-types)
+                                                     ","))
+                                     "--on-busy-update=restart"
+                                     "--shell bash"
+                                     "--watch .")))
 
 (define (hr)
   "Alias to hot-reloading."
