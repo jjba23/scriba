@@ -46,9 +46,8 @@
                                       (timestamp-format (default-time-format))
                                       (out-port (default-out-port))
                                       (flush-port? (default-flush-port?))
-                                      ;; 1. Add layout parameter with a default order
-                                      (layout '(level time name context
-                                                      message)))
+                                      (layout '(level time name message
+                                                      context)))
   (define name-str
     (format-name name))
 
