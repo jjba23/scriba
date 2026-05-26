@@ -102,9 +102,6 @@ The auto-logger checks for ~SCRIBA_~ prefixed environment variables first (allow
 
 Because in its implementation, the ~get-env-*~ functions act as defaults for the ~#:key~ arguments in ~%make-scriba-auto-logger~, you can easily override the environment programmatically: ~(scriba-auto-logger #:level 'trace)~.
 
-------------------------
-
-[[https://jointhefreeworld.org/static-assets/scriba/scriba_small.png]]
 
 ----------
 
@@ -251,6 +248,10 @@ Some boilerplate operations, such as generating keyword-based record constructor
 Attaching metadata via ~with-log-context~ does not mutate global state or require expensive thread-locking.
 
 It relies on Guile's native ~parameterize~, which securely and efficiently handles dynamically scoped, thread-local variables.
+
+------------------------
+
+[[https://jointhefreeworld.org/static-assets/scriba/scriba_small.png]]
 
 ------------------------
 
