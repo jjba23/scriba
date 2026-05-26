@@ -18,7 +18,7 @@
 (define-module (scriba json)
   #:use-module (json)
   #:use-module (scriba scriba)
-  #:export (scriba-json-logger default-json-pretty?))
+  #:export (scriba-json-logger default-json-pretty? %make-scriba-json-logger))
 
 (define (get-time-field with-timestamp? format-string)
   "Returns a timestamp alist entry, or an empty list if disabled."
@@ -40,7 +40,8 @@
                                    (with-timestamp? (default-with-timestamp?))
                                    (timestamp-format (default-time-format))
                                    (out-port (default-out-port))
-                                   (flush-port? (default-flush-port?)))
+                                   (flush-port? (default-flush-port?))
+                                   (layout '(level time name message context)))
 
   (define name-field
     (get-name-field name))
@@ -53,13 +54,19 @@
                (base-field `((message unquote user-msg)))
                (time-field (get-time-field with-timestamp? timestamp-format))
                (dynamic-ctx (current-log-context))
+               (fragments `((level unquote level-field)
+                            (time unquote time-field)
+                            (name unquote name-field)
+                            (message unquote base-field)
+                            (context unquote dynamic-ctx)))
 
-               (fields (append level-field name-field time-field base-field
-                               dynamic-ctx))
-
+               (ordered-fragments (map (lambda (sym)
+                                         (let ((frag (assq-ref fragments sym)))
+                                           (if frag frag
+                                               '()))) layout))
+               (fields (apply append ordered-fragments))
                (serialized-log (scm->json-string fields
                                                  #:pretty pretty?)))
-
           (format out-port "\n~a" serialized-log)
           (when flush-port?
             (force-output out-port))))))

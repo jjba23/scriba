@@ -197,6 +197,18 @@ Logging to a string port (in-memory) can be useful to capture logs and test that
 
 ----------------
 
+** Log Format
+
+You can easily customize the log format and disable certain fields via layout
+#+begin_src scheme
+(let* ((s (scriba-console-logger #:name 'console-logger
+                              #:level 'info
+                              #:layout '(level time name context message))))
+  (log-info s "2 + 2 = ~a" (+ 2 2)))
+#+end_src
+
+--------------
+
 * Good Logging from Day One and My Excuses
 
 I'm sure you've felt this, when starting a new project, setting up a /proper/ logging framework feels like an unnecessary chore.

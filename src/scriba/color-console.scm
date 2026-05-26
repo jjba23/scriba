@@ -17,7 +17,7 @@
 
 (define-module (scriba color-console)
   #:use-module (scriba scriba)
-  #:export (scriba-color-console-logger))
+  #:export (scriba-color-console-logger %make-scriba-color-console-logger))
 
 (define ansi-reset
   "\x1b[0m")
@@ -45,14 +45,14 @@
 ; Default
 
 (define (format-timestamp with-timestamp? format-string)
-  "Returns a dimmed formatted timestamp string, or an empty string."
+  "Returns a formatted timestamp string, or an empty string."
   (if with-timestamp?
       (format #f "~a[~a]~a " ansi-dim
               (strftime format-string
                         (localtime (current-time))) ansi-reset) ""))
 
 (define (format-context ctx)
-  "Converts an alist context into a dimmed bracketed string layout."
+  "Converts an alist context into a bracketed string layout."
   (let ((mdc (map (lambda (pair)
                     (format #f "[~a=~a]"
                             (car pair)
@@ -62,7 +62,7 @@
                        (string-join mdc " ") ansi-reset " "))))
 
 (define (format-name name)
-  "Returns the dimmed formatted logger name, or an empty string."
+  "Returns the formatted logger name, or an empty string."
   (if name
       (format #f "~a[~a]~a " ansi-dim name ansi-reset) ""))
 
@@ -71,7 +71,9 @@
                                             (with-timestamp? (default-with-timestamp?))
                                             (timestamp-format (default-time-format))
                                             (out-port (default-out-port))
-                                            (flush-port? (default-flush-port?)))
+                                            (flush-port? (default-flush-port?))
+                                            (layout '(level time name context
+                                                            message)))
   (define name-str
     (format-name name))
 
@@ -82,18 +84,24 @@
       (lambda (msg . args)
         (let* ((time-str (format-timestamp with-timestamp? timestamp-format))
                (ctx-str (format-context (current-log-context)))
-               (user-msg (apply format #f msg args)))
-          
-          (format out-port
-                  "\n~a~a~a~a~a~a~a"
-                  level-str ;Colored e.g., [INFO]
-                  time-str ;Dimmed
-                  name-str ;Dimmed
-                  ctx-str ;Dimmed
-                  color ;Start color for the user message
-                  user-msg ;Actual message
-                  ansi-reset) ;Reset terminal color at the end of the line
-          
+               (raw-user-msg (apply format #f msg args))
+
+               (user-msg (string-append color raw-user-msg ansi-reset))
+
+               (parts-alist `((level unquote level-str)
+                              (time unquote time-str)
+                              (name unquote name-str)
+                              (context unquote ctx-str)
+                              (message unquote user-msg)))
+
+               (ordered-strings (map (lambda (sym)
+                                       (or (assq-ref parts-alist sym) ""))
+                                     layout))
+
+               (final-output (apply string-append ordered-strings)))
+
+          (format out-port "\n~a" final-output)
+
           (when flush-port?
             (force-output out-port))))))
 

@@ -26,7 +26,7 @@
 
 (define log-suite
   (suite "Log"
-         (let* ((s (scriba-console-logger)))
+         (let* ((s (scriba-console-logger #:layout '(time level message context))))
            (test "scriba-console-logger"
                  (assert-no-error (lambda ()
                                     (log-info s "Hello Scriba!"))

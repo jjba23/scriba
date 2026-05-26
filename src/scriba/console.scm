@@ -17,7 +17,7 @@
 
 (define-module (scriba console)
   #:use-module (scriba scriba)
-  #:export (scriba-console-logger))
+  #:export (scriba-console-logger %make-scriba-console-logger))
 
 (define (format-timestamp with-timestamp? format-string)
   "Returns a formatted timestamp string, or an empty string."
@@ -45,7 +45,10 @@
                                       (with-timestamp? (default-with-timestamp?))
                                       (timestamp-format (default-time-format))
                                       (out-port (default-out-port))
-                                      (flush-port? (default-flush-port?)))
+                                      (flush-port? (default-flush-port?))
+                                      ;; 1. Add layout parameter with a default order
+                                      (layout '(level time name context
+                                                      message)))
   (define name-str
     (format-name name))
 
@@ -55,15 +58,20 @@
       (lambda (msg . args)
         (let* ((time-str (format-timestamp with-timestamp? timestamp-format))
                (ctx-str (format-context (current-log-context)))
-               (user-msg (apply format #f msg args)))
+               (user-msg (apply format #f msg args))
 
-          (format out-port
-                  "\n~a~a~a~a~a"
-                  level-str
-                  time-str
-                  name-str
-                  ctx-str
-                  user-msg)
+               (parts-alist `((level unquote level-str)
+                              (time unquote time-str)
+                              (name unquote name-str)
+                              (context unquote ctx-str)
+                              (message unquote user-msg)))
+
+               (ordered-strings (map (lambda (sym)
+                                       (or (assq-ref parts-alist sym) ""))
+                                     layout))
+
+               (final-output (apply string-append ordered-strings)))
+          (format out-port "\n~a" final-output)
           (when flush-port?
             (force-output out-port))))))
 
