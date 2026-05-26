@@ -251,8 +251,9 @@ It relies on Guile's native ~parameterize~, which securely and efficiently handl
 
 ------------------------
 
-#+ATTR_HTML :align center
+#+begin_center
 [[https://jointhefreeworld.org/static-assets/scriba/scriba_small.png]]
+#+end_center
 
 ------------------------
 
