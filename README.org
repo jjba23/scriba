@@ -129,6 +129,8 @@ See [[file:src/scriba/]] for more details.
 
 All logger implementations share the same fundamental traits and supported functions. See the project's unit tests for more complex configurations: [[file:test/veritas/unit/log-spec.scm]] and [[file:test/veritas/unit/auto-log-spec.scm]]
 
+-------------------------
+
 ** Log Levels
 A logging action is executed only if its designated level is higher than or equal to the effective level of the configured logger.
 
@@ -138,6 +140,8 @@ A log action of level L issued to a logger having an effective level Q, is enabl
 
 The standard hierarchy is:
 ~trace~ < ~debug~ < ~info~ < ~success~ < ~warning~ < ~error~ < ~critical~
+
+-------------------------
 
 ** Log Context
 For better observability, it is often useful to attach dynamic metadata to your log lines. Scriba handles this seamlessly via contexts:
@@ -149,7 +153,9 @@ For better observability, it is often useful to attach dynamic metadata to your 
   (do-some-work a b c))
 #+end_src
 
-** Log destination
+-------------------------
+
+** Log Routing
 
 In general, the most common use-case for programs is to emit log lines to the standard output (stdout). From there you can capture the output and redirect as needed.
 
