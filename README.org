@@ -155,10 +155,10 @@ Logging to a file (TODO how to auto-rolling log files?):
 
 Logging to a string port (in-memory) can be useful to capture logs and test that your program logs as expected:
 #+begin_src scheme
-(let ((string-port (open-output-string))
+(let* ((string-port (open-output-string))
       (s (scriba-console-logger #:out-port string-port)))
   (log-info s "Hello Scriba!")
-  (let ((result (get-output-string string-port)))
+  (let* ((result (get-output-string string-port)))
     (equal? result "\n[INFO] Hello Scriba!"))) ; #t
 #+end_src
 
