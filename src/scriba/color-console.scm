@@ -83,7 +83,8 @@
                               (string-upcase (symbol->string lvl)) ansi-reset)))
       (lambda (msg . args)
         (let* ((time-str (format-timestamp with-timestamp? timestamp-format))
-               (ctx-str (format-context (current-log-context)))
+               (ctx-str (string-append " "
+                                       (format-context (current-log-context))))
                (raw-user-msg (apply format #f msg args))
 
                (user-msg (string-append color raw-user-msg ansi-reset))
@@ -99,7 +100,7 @@
                                      layout))
 
                (final-output (apply string-append ordered-strings)))
-
+          
           (format out-port "\n~a" final-output)
 
           (when flush-port?

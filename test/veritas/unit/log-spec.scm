@@ -21,21 +21,31 @@
   #:use-module (ice-9 iconv)
   #:use-module (scriba scriba)
   #:use-module (scriba console)
+  #:use-module (scriba color-console)
   #:use-module (scriba json)
   #:export (spec))
 
 (define log-suite
   (suite "Log"
-         (let* ((s (scriba-console-logger #:layout '(time level message context))))
+         (let* ((s (scriba-console-logger #:layout '(time level message
+                                                          context)))
+                (sc (scriba-color-console-logger #:layout '(time level message
+                                                                 context))))
            (test "scriba-console-logger"
                  (assert-no-error (lambda ()
-                                    (log-info s "Hello Scriba!"))
+                                    (log-info s "Hello Scriba!")
+                                    (log-info sc "Hello World!"))
                                   #:name
                                   "default configuration and simple message")
                  (assert-no-error (lambda ()
                                     (log-debug s
                                      "we should never see this since log level is not high enough!")
                                     (log-warning s "some kind of warning")
+                                    (log-critical sc "IN VINO VERITAS")
+                                    (with-log-context `(("SANITAS" . "CARPE DIEM"))
+                                                      (log-critical sc
+                                                                    "IN AQUA"))
+                                    (log-success sc "ja, wir schaffen das!")
                                     (log-success s "yes! we made it")
                                     (log-info s "Hello Scriba, 2 + 2 = ~a!"
                                               (+ 2 2)))

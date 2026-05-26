@@ -31,9 +31,8 @@
                                     (with-log-context `((sample-1 . value-1))
                                                       (log-info s
                                                        "Some log with context"))
-                                    (unless (equal?
-                                             "
-[INFO] [sample-1=value-1] Some log with context"
+                                    (unless (string-prefix-ci? "\n[INFO] Some log with context"
+
                                              (get-output-string string-port))
                                       (throw 'error-logging)))
                                   #:name

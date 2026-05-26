@@ -56,7 +56,8 @@
                              (string-upcase (symbol->string lvl)))))
       (lambda (msg . args)
         (let* ((time-str (format-timestamp with-timestamp? timestamp-format))
-               (ctx-str (format-context (current-log-context)))
+               (ctx-str (string-append " "
+                                       (format-context (current-log-context))))
                (user-msg (apply format #f msg args))
 
                (parts-alist `((level unquote level-str)
