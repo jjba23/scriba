@@ -18,11 +18,28 @@ A primary advantage of Scriba over standard ~display~, ~write~, or ~println~ pro
 
 By separating formatting, severity levels, and output destinations, Scriba offers modularity that makes extending the library or writing your own custom loggers trivial.
 
-Scriba is built around the core abstraction of a *logger*. It achieves high performance by memoizing computations and leveraging compile-time macro expansions (see [[file:src/scriba/scriba.scm][scriba.scm]].
+Scriba is built around the core abstraction of a *logger*. It achieves high performance by memoizing computations and leveraging compile-time macro expansions (see [[file:src/scriba/scriba.scm][scriba.scm]]).
 
 Find the complete, technical Guile Scheme  [[https://jointhefreeworld.org/api-docs/scriba/API.html][API documentation here]]
 
 -----------------------
+
+
+* Observability and Structured Logging
+
+In modern software development, simply writing ~(display "\nError happened")~ is no longer enough. As applications grow in complexity, understanding their internal state in production (observability) becomes critical.
+
+In practice, we see that traditional unstructured logs are nice and easy for humans to read, but notoriously difficult for machines to parse, search, and alert on.
+
+That's why structured logging is important. In that mindset, we treat logs not as strings of text, but as structured data (typically JSON).
+
+By attaching key-value pairs (context) to your logs, you allow log aggregators (think Grafana Loki, Elasticsearch, or Datadog) to instantly filter and visualize system behavior.
+
+This also makes your life easier when debugging or trying to gain insights into your system.
+
+Scriba gives you the tooling and provides and expressive logger API that can produce beautiful, human-readable logs in development, and robust, machine-readable structured logs in production, without changing a single line of your application code.
+
+-------------------------
 
 * Quickstart
 
@@ -161,6 +178,60 @@ Logging to a string port (in-memory) can be useful to capture logs and test that
   (let* ((result (get-output-string string-port)))
     (equal? result "\n[INFO] Hello Scriba!"))) ; #t
 #+end_src
+
+----------------
+
+* Good Logging from Day One and My Excuses
+
+I'm sure you've felt this, when starting a new project, setting up a /proper/ logging framework feels like an unnecessary chore.
+
+We reach for ~(display "\ngot here")~ or ~format~ because it is frictionless.
+
+But as the codebase grows, those scattered print statements become a noisy, unsearchable liability.
+
+With Scriba, you have less excuses to procastinate:
+
+- *"It is too much boilerplate to set up."*
+  With the ~scriba-auto-logger~, it takes exactly two lines of code to get a fully functioning, formatted logger. No complex configuration files or initialization rituals required.
+
+- *"Structured JSON is terrible to read during local development."*
+  You do not have to look at JSON while developing. Scriba's auto-logger separates your code from your deployment environment. You can get beautiful, human-readable, even colorful console logs on your machine, and robust, machine-parsable JSON logs in production—just by changing the ~SCRIBA_LOGGER~ environment variable.
+
+- *"I don't want to pass metadata through 20 function layers."*
+  Scriba's ~with-log-context~ dynamically scopes your data. You can attach a ~request-id~ or ~user-id~ at the top level of your application, and every log statement nested deep within your call stack will automatically include it thanks to Scheme's parameters and ~parameterize~.
+
+- *"A logging library will slow down my high-performance prototype."*
+  Thanks to the attention put into performance, Scriba's overhead is minimal (and worth it). When a log level is disabled (e.g., debug logs in a production environment), the internal I/O and string formatting operations are entirely bypassed.
+
+Start with Scriba on day one ✨
+
+------------
+
+* Performance Under the Hood
+
+Logging is a global cross-cutting concern, and it should never become the bottleneck in your application's execution.
+
+Scriba achieves high throughput by front-loading as much computation as possible, using the macro system, and leveraging Guile's native optimizations.
+
+** Constructor Memoization
+Creating and configuring loggers can involve reading environments, parsing strings, and allocating records.
+
+Scriba exposes a ~memoize-logger~ macro that wraps logger factories with a hash-table cache. If you request a logger with the exact same configuration parameters anywhere in your codebase, Scriba instantly returns the cached instance instead of rebuilding it.
+
+** Ahead-of-Time Level Filtering
+Instead of checking the log severity level on every single ~log-*~ invocation, Scriba evaluates the hierarchy exactly once when the logger is instantiated.
+-Scriba permanently binds that logger's irrelevant functions to a lightning-fast no-op function when below the level threshold.
+- This means calling a disabled log level entirely bypasses string formatting, port flushing, and I/O routing ✨.
+
+** Compile-Time Macros
+A great deal of effort is taken to keep runtime overhead strictly minimal, and Scriba avoids doing much dynamic dispatch or runtime reflection.
+
+Some boilerplate operations, such as generating keyword-based record constructors (~define-record-with-kw~) and generating the domain logging functions (~define-logger-method~), are handled by Scheme macros that expand natively at compile-time.
+
+** Efficient Context Management
+Attaching metadata via ~with-log-context~ does not mutate global state or require expensive thread-locking.
+
+It relies on Guile's native ~parameterize~, which securely and efficiently handles dynamically scoped, thread-local variables.
 
 ------------------------
 
