@@ -85,6 +85,8 @@ Available loggers: ~console~ , ~color-console~ and ~json~
 ** Specific Loggers
 Loggers are (optionally named) entities responsible for emitting logs. They act as the primary interface between your application and Scriba. If you prefer to have more control and bypass the auto-logger, you can instantiate specific loggers directly.
 
+See [[file:src/scriba/]] for more details.
+
 *Console Logger:*
 #+begin_src scheme
 (use-module (scriba scriba)
@@ -128,6 +130,36 @@ For better observability, it is often useful to attach dynamic metadata to your 
   (log-info logger "Fetching database records...")
   ;; Any deeper function calls that log will automatically include this context!
   (do-some-work a b c))
+#+end_src
+
+** Log destination
+
+In general, the most common use-case for programs is to emit log lines to the standard output (stdout). From there you can capture the output and redirect as needed.
+
+Some applications and users may require more advanced functionality like logging to files, sockets, or network destinations.
+
+Scriba offers an easily configurable interface to log destination, thanks to Scheme's fantastic input/output port system.
+
+By default:
+#+begin_src scheme
+(scriba-console-logger #:out-port (current-output-port)) ;; stdout generally
+#+end_src
+
+Logging to a file (TODO how to auto-rolling log files?):
+#+begin_src scheme
+(let* ((file-port (open-output-file "test.log"))
+       (s (scriba-console-logger #:out-port file-port)))
+  (log-info s "Hello Scriba!")
+  (close-output-port file-port)) ;; don't forget to close file ports!
+#+end_src
+
+Logging to a string port (in-memory) can be useful to capture logs and test that your program logs as expected:
+#+begin_src scheme
+(let ((string-port (open-output-string))
+      (s (scriba-console-logger #:out-port string-port)))
+  (log-info s "Hello Scriba!")
+  (let ((result (get-output-string string-port)))
+    (equal? result "\n[INFO] Hello Scriba!"))) ; #t
 #+end_src
 
 ------------------------
