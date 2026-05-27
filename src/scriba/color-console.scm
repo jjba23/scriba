@@ -16,6 +16,7 @@
 ;; along with scriba.  If not, see <https://www.gnu.org/licenses/>.
 
 (define-module (scriba color-console)
+  #:use-module (srfi srfi-1)
   #:use-module (scriba scriba)
   #:export (scriba-color-console-logger %make-scriba-color-console-logger))
 
@@ -47,9 +48,9 @@
 (define (format-timestamp with-timestamp? format-string)
   "Returns a formatted timestamp string, or an empty string."
   (if with-timestamp?
-      (format #f "~a[~a]~a " ansi-dim
+      (format #f "~a[~a]~a" ansi-dim
               (strftime format-string
-                        (localtime (current-time))) ansi-reset) ""))
+                        (localtime (current-time))) ansi-reset) #f))
 
 (define (format-context ctx)
   "Converts an alist context into a bracketed string layout."
@@ -57,14 +58,14 @@
                     (format #f "[~a=~a]"
                             (car pair)
                             (cdr pair))) ctx)))
-    (if (nil? ctx) ""
+    (if (nil? ctx) #f
         (string-append ansi-dim
-                       (string-join mdc " ") ansi-reset " "))))
+                       (string-join mdc " ") ansi-reset))))
 
 (define (format-name name)
   "Returns the formatted logger name, or an empty string."
   (if name
-      (format #f "~a[~a]~a " ansi-dim name ansi-reset) ""))
+      (format #f "~a[~a]~a " ansi-dim name ansi-reset) #f))
 
 (define* (%make-scriba-color-console-logger #:key name
                                             (level (default-log-level))
@@ -79,12 +80,11 @@
 
   (define (make-color-printer lvl)
     (let* ((color (level->color lvl))
-           (level-str (format #f "~a[~a]~a " color
+           (level-str (format #f "~a[~a]~a" color
                               (string-upcase (symbol->string lvl)) ansi-reset)))
       (lambda (msg . args)
         (let* ((time-str (format-timestamp with-timestamp? timestamp-format))
-               (ctx-str (string-append " "
-                                       (format-context (current-log-context))))
+               (ctx-str (format-context (current-log-context)))
                (raw-user-msg (apply format #f msg args))
 
                (user-msg (string-append color raw-user-msg ansi-reset))
@@ -95,11 +95,11 @@
                               (context unquote ctx-str)
                               (message unquote user-msg)))
 
-               (ordered-strings (map (lambda (sym)
-                                       (or (assq-ref parts-alist sym) ""))
-                                     layout))
+               (ordered-strings (filter-map (lambda (sym)
+                                              (assq-ref parts-alist sym))
+                                            layout))
 
-               (final-output (apply string-append ordered-strings)))
+               (final-output (string-join ordered-strings " ")))
           
           (format out-port "\n~a" final-output)
 
