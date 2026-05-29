@@ -58,6 +58,27 @@ Scriba gives you the tooling and provides and expressive logger API that can pro
 
 * Quickstart
 
+** Example logging formats
+
+Example console logging:
+#+begin_example
+[INFO] [2026-05-24 11:23:06 CEST] Hello Scriba, 2 + 2 = 4!
+[INFO] [2026-05-24 11:23:06 CEST] [sample-1=value-1] Some log with context
+#+end_example
+
+Example JSON logging:
+#+begin_example
+{"level":"INFO","time":"2026-05-24 11:23:06 CEST","message":"Some log with context","sample-2":"value-2"}
+{"level":"WARNING","time":"2026-05-24 11:23:06 CEST","message":"some kind of warning"}
+#+end_example
+
+Example syslog logging (RFC 5424):
+#+begin_example
+<14>2 2026-05-29T10:56:49+0200 joe-vdb-thinkpad 37222 - Hello Scriba!
+<14>2 2026-05-29T10:56:49+0200 joe-vdb-thinkpad 37222 - [sample-1="value-1"] Some log with context
+<12>2 2026-05-29T10:56:49+0200 joe-vdb-thinkpad 37222 - some kind of warning
+#+end_example
+
 ** The Auto-Configured Logger
 While you can instantiate specific loggers manually, the simplest way to get started is with the *auto-logger*. It reads environment variables (and, in the future, Scheme configuration files) to automatically determine at runtime which logger to use and how to configure it.
 
@@ -74,17 +95,6 @@ This is especially useful for maintaining different logging behaviors between de
                     (log-info s "Message with context")))
 #+end_src
 
-Example console logging:
-#+begin_example
-[INFO] [2026-05-24 11:23:06 CEST] Hello Scriba, 2 + 2 = 4!
-[INFO] [2026-05-24 11:23:06 CEST] [sample-1=value-1] Some log with context
-#+end_example
-
-Example JSON logging:
-#+begin_example
-{"level":"INFO","time":"2026-05-24 11:23:06 CEST","message":"Some log with context","sample-2":"value-2"}
-{"level":"WARNING","time":"2026-05-24 11:23:06 CEST","message":"some kind of warning"}
-#+end_example
 
 *Note:* Logger creation is memoized. Subsequent calls to create the same logger (even elsewhere in your codebase) are instant because the result is only computed once.
 
