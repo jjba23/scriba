@@ -33,7 +33,6 @@
                                  default-time-format
                                  default-log-level
                                  default-logger
-                                 default-with-timestamp?
                                  default-out-port
                                  default-flush-port?
                                  with-log-context
@@ -213,9 +212,6 @@ in memory, preventing redundant instantiations and reducing overhead."
 
 (define default-logger
   (make-parameter 'console))
-
-(define default-with-timestamp?
-  (make-parameter #t))
 
 (define default-out-port
   (make-parameter (current-output-port)))

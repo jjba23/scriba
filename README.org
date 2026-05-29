@@ -109,6 +109,8 @@ Because in its implementation, the ~get-env-*~ functions act as defaults for the
 
 Available loggers: ~console~ , ~color-console~ and ~json~
 
+Each logger supports a shared set of options, albeit possibly with different defaults. Check the implementation of each logger for more accurate details.
+
 ** Specific Loggers
 Loggers are (optionally named) entities responsible for emitting logs. They act as the primary interface between your application and Scriba. If you prefer to have more control and bypass the auto-logger, you can instantiate specific loggers directly.
 
@@ -203,7 +205,7 @@ You can easily customize the log format and disable certain fields via layout
 #+begin_src scheme
 (let* ((s (scriba-console-logger #:name 'console-logger
                               #:level 'info
-                              #:layout '(level time name context message))))
+                              #:layout '(level time host name context message))))
   (log-info s "2 + 2 = ~a" (+ 2 2)))
 #+end_src
 

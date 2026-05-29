@@ -20,13 +20,11 @@
   #:use-module (scriba scriba)
   #:export (scriba-json-logger default-json-pretty? %make-scriba-json-logger))
 
-(define (get-time-field with-timestamp? format-string)
-  "Returns a timestamp alist entry, or an empty list if disabled."
-  (if with-timestamp?
-      `((time unquote
-              (strftime format-string
-                        (localtime (current-time)))))
-      '()))
+(define (get-time-field format-string)
+  "Returns a timestamp alist entry."
+  `((time unquote
+          (strftime format-string
+                    (localtime (current-time))))))
 
 (define (get-name-field name)
   "Returns a name alist entry, or an empty list if unnamed."
@@ -37,25 +35,30 @@
 (define* (%make-scriba-json-logger #:key name
                                    (level (default-log-level))
                                    pretty?
-                                   (with-timestamp? (default-with-timestamp?))
                                    (timestamp-format (default-time-format))
                                    (out-port (default-out-port))
                                    (flush-port? (default-flush-port?))
-                                   (layout '(level time name message context)))
+                                   (layout '(level time host name message
+                                                   context)))
 
   (define name-field
     (get-name-field name))
 
   (define (make-json-printer lvl)
     (let ((level-field `((level unquote
-                                (string-upcase (symbol->string lvl))))))
+                                (string-upcase (symbol->string lvl)))))
+          (host-field `((host unquote
+                              (gethostname)))))
       (lambda (msg . args)
         (let* ((user-msg (apply format #f msg args))
                (base-field `((message unquote user-msg)))
-               (time-field (get-time-field with-timestamp? timestamp-format))
+               (time-field (if (memq 'time layout
+                                     )
+                               (get-time-field timestamp-format) #f))
                (dynamic-ctx (current-log-context))
                (fragments `((level unquote level-field)
                             (time unquote time-field)
+                            (host unquote host-field)
                             (name unquote name-field)
                             (message unquote base-field)
                             (context unquote dynamic-ctx)))

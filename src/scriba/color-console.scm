@@ -45,12 +45,11 @@
     (else "")))
 ; Default
 
-(define (format-timestamp with-timestamp? format-string)
-  "Returns a formatted timestamp string, or an empty string."
-  (if with-timestamp?
-      (format #f "~a[~a]~a" ansi-dim
-              (strftime format-string
-                        (localtime (current-time))) ansi-reset) #f))
+(define (format-timestamp format-string)
+  "Returns a formatted timestamp string."
+  (format #f "~a[~a]~a" ansi-dim
+          (strftime format-string
+                    (localtime (current-time))) ansi-reset))
 
 (define (format-context ctx)
   "Converts an alist context into a bracketed string layout."
@@ -69,21 +68,22 @@
 
 (define* (%make-scriba-color-console-logger #:key name
                                             (level (default-log-level))
-                                            (with-timestamp? (default-with-timestamp?))
                                             (timestamp-format (default-time-format))
                                             (out-port (default-out-port))
                                             (flush-port? (default-flush-port?))
-                                            (layout '(level time name context
-                                                            message)))
+                                            (layout '(level time host name
+                                                            context message)))
   (define name-str
     (format-name name))
 
   (define (make-color-printer lvl)
     (let* ((color (level->color lvl))
            (level-str (format #f "~a[~a]~a" color
-                              (string-upcase (symbol->string lvl)) ansi-reset)))
+                              (string-upcase (symbol->string lvl)) ansi-reset))
+           (host-str (gethostname)))
       (lambda (msg . args)
-        (let* ((time-str (format-timestamp with-timestamp? timestamp-format))
+        (let* ((time-str (if (memq 'time layout)
+                             (format-timestamp timestamp-format) #f))
                (ctx-str (format-context (current-log-context)))
                (raw-user-msg (apply format #f msg args))
 
@@ -91,6 +91,7 @@
 
                (parts-alist `((level unquote level-str)
                               (time unquote time-str)
+                              (host unquote host-str)
                               (name unquote name-str)
                               (context unquote ctx-str)
                               (message unquote user-msg)))
@@ -100,7 +101,7 @@
                                             layout))
 
                (final-output (string-join ordered-strings " ")))
-          
+
           (format out-port "\n~a" final-output)
 
           (when flush-port?

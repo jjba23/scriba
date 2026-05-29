@@ -20,12 +20,11 @@
   #:use-module (scriba scriba)
   #:export (scriba-syslog-logger %make-scriba-syslog-logger))
 
-(define (format-timestamp with-timestamp? format-string)
-  "Returns a formatted timestamp string, or an empty string."
-  (if with-timestamp?
-      (format #f "~a"
-              (strftime format-string
-                        (localtime (current-time)))) #f))
+(define (format-timestamp format-string)
+  "Returns a formatted timestamp string."
+  (format #f "~a"
+          (strftime format-string
+                    (localtime (current-time)))))
 
 (define (format-context ctx)
   "Converts an alist context into a bracketed string layout: [k=v] [k=v]."
@@ -43,7 +42,7 @@
       (format #f "[~a]" name) #f))
 
 (define* (level-to-priority lvl
-                            (facility 1))
+                            #:key (facility 1))
   "Translates a scriba log level symbol to a Syslog PRI integer based on the facility."
   (let ((severity (cond
                     ((eq? lvl
@@ -87,23 +86,26 @@
 
 (define* (%make-scriba-syslog-logger #:key name
                                      (level (default-log-level))
-                                     (with-timestamp? (default-with-timestamp?))
-                                     (timestamp-format (default-time-format))
+                                     (timestamp-format iso-8601-time-format)
                                      (out-port (default-out-port))
                                      (flush-port? (default-flush-port?))
-                                     (layout '(level time name message context)))
+                                     (layout '(level time host name message
+                                                     context)))
   (define name-str
     (format-name name))
 
   (define (make-syslog-printer lvl)
     (let ((level-str (format #f "<~a>2"
-                             (string-upcase (symbol->string lvl)))))
+                             (level-to-priority lvl)))
+          (host-str (gethostname)))
       (lambda (msg . args)
-        (let* ((time-str (format-timestamp with-timestamp? timestamp-format))
+        (let* ((time-str (if (memq 'time layout)
+                             (format-timestamp timestamp-format) #f))
                (ctx-str (format-context (current-log-context)))
                (user-msg (apply format #f msg args))
                (parts-alist `((level unquote level-str)
                               (time unquote time-str)
+                              (host unquote host-str)
                               (name unquote name-str)
                               (context unquote ctx-str)
                               (message unquote user-msg)))

@@ -55,15 +55,6 @@
             (string=? env-val "1"))
         (default-json-pretty?))))
 
-(define (get-env-with-timestamp?)
-  "Checks if the logger should print timestamps based on the environment."
-  (let ((env-val (or (getenv "SCRIBA_WITH_TIMESTAMP")
-                     (getenv "LOG_WITH_TIMESTAMP"))))
-    (if env-val
-        (or (string=? (string-downcase env-val) "true")
-            (string=? env-val "1"))
-        (default-with-timestamp?))))
-
 (define (get-env-flush-port?)
   "Checks if the logger should flush the port every log action, based on the environment."
   (let ((env-val (or (getenv "SCRIBA_FLUSH_PORT")
@@ -89,7 +80,6 @@
 (define* (%make-scriba-auto-logger #:key name
                                    (level (get-env-log-level))
                                    (out-port (get-env-out-port))
-                                   (with-timestamp? (get-env-with-timestamp?))
                                    (timestamp-format (get-env-timestamp-format))
                                    (flush-port? (get-env-flush-port?))
                                    (pretty? (get-env-json-pretty?)))
@@ -103,7 +93,6 @@
                            #:out-port out-port
                            #:pretty? pretty?
                            #:flush-port? flush-port?
-                           #:with-timestamp? with-timestamp?
                            #:timestamp-format timestamp-format))
       ((eq? log-format
             'color-console)
@@ -111,13 +100,11 @@
                                     #:level level
                                     #:out-port out-port
                                     #:flush-port? flush-port?
-                                    #:with-timestamp? with-timestamp?
                                     #:timestamp-format timestamp-format))
       (else (scriba-console-logger #:name name
                                    #:level level
                                    #:out-port out-port
                                    #:flush-port? flush-port?
-                                   #:with-timestamp? with-timestamp?
                                    #:timestamp-format timestamp-format)))))
 
 (define scriba-auto-logger

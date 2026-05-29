@@ -25,16 +25,18 @@
   (suite "String"
          (let* ((string-port (open-output-string))
                 (s (scriba-console-logger #:out-port string-port
-                                          #:with-timestamp? #f)))
+                                          #:layout '(level name message
+                                                           context))))
            (test "scriba-console-logger to string"
                  (assert-no-error (lambda ()
                                     (with-log-context `((sample-1 . value-1))
                                                       (log-info s
                                                        "Some log with context"))
-                                    (unless (string-prefix-ci? "\n[INFO] Some log with context"
-
-                                             (get-output-string string-port))
-                                      (throw 'error-logging)))
+                                    (let ((r (get-output-string string-port)))
+                                      (unless (string-prefix-ci?
+                                               "\n[INFO] Some log with context"
+                                               r)
+                                        (throw 'unexpected-log-message r))))
                                   #:name
                                   "default configuration and logging context")))))
 
