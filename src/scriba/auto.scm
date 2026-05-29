@@ -15,6 +15,14 @@
 ;; You should have received a copy of the Lesser GNU General Public License
 ;; along with scriba.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+;;
+;; This module provides zero-configuration initialization for the Scriba
+;; logging framework. It dynamically bootstraps, configures, and memoizes
+;; an appropriate logger backend based on system environment variables.
+
+;;; Code:
+
 (define-module (scriba auto)
   #:use-module (ice-9 match)
   #:use-module (scriba scriba)
@@ -24,61 +32,60 @@
   #:use-module (scriba syslog)
   #:export (scriba-auto-logger))
 
+(define (get-env-with-default var-name default-proc transform)
+  "Retrieves an environment variable, transforming it if found, or falling back to a default."
+  (let ((env-val (getenv var-name)))
+    (if env-val
+        (transform env-val)
+        (default-proc))))
+
+(define (string->boolean str)
+  "Normalizes string truthiness for env configurations."
+  (let ((down (string-downcase str)))
+    (or (string=? down "true")
+        (string=? down "1"))))
+
+(define (string->downcase-symbol str)
+  (string->symbol (string-downcase str)))
+
 (define (get-env-log-level)
   "Parses the log level from the environment, falling back to default-level."
-  (let ((env-val (getenv "SCRIBA_LOG_LEVEL")))
-    (if env-val
-        (string->symbol (string-downcase env-val))
-        (default-log-level))))
+  (get-env-with-default "SCRIBA_LOG_LEVEL" default-log-level
+                        string->downcase-symbol))
 
 (define (get-env-logger)
-  "Parses the log format ('console', 'color-console', 'syslog' or 'json') from the environment."
-  (let ((env-val (getenv "SCRIBA_LOGGER")))
-    (if env-val
-        (string->symbol (string-downcase env-val))
-        (default-logger))))
+  "Parses the logger ('console', 'color-console', 'syslog' or 'json') from the environment."
+  (get-env-with-default "SCRIBA_LOGGER" default-logger string->downcase-symbol))
 
 (define (get-env-layout)
   "Parses the log layout from the environment."
-  (let ((env-val (getenv "SCRIBA_LOG_LAYOUT")))
-    (if env-val
-        (map string->symbol
-             (string-split env-val #\,))
-        (default-log-layout))))
+  (get-env-with-default "SCRIBA_LOG_LAYOUT" default-log-layout
+                        (lambda (val)
+                          (map string->symbol
+                               (string-split val #\,)))))
 
 (define (get-env-timestamp-format)
   "Parses the log timestamp format from the environment."
-  (let ((env-val (getenv "SCRIBA_TIMESTAMP_FORMAT")))
-    (if env-val env-val
-        (default-time-format))))
+  (get-env-with-default "SCRIBA_TIMESTAMP_FORMAT" default-time-format identity))
 
 (define (get-env-json-pretty?)
   "Checks if the JSON logger should pretty-print based on the environment."
-  (let ((env-val (getenv "SCRIBA_JSON_PRETTY")))
-    (if env-val
-        (or (string=? (string-downcase env-val) "true")
-            (string=? env-val "1"))
-        (default-json-pretty?))))
+  (get-env-with-default "SCRIBA_JSON_PRETTY" default-json-pretty?
+                        string->boolean))
 
 (define (get-env-flush-port?)
   "Checks if the logger should flush the port every log action, based on the environment."
-  (let ((env-val (getenv "SCRIBA_FLUSH_PORT")))
-    (if env-val
-        (or (string=? (string-downcase env-val) "true")
-            (string=? env-val "1"))
-        (default-flush-port?))))
+  (get-env-with-default "SCRIBA_FLUSH_PORT" default-flush-port?
+                        string->boolean))
 
 (define (get-env-out-port)
   "Parses the output port based on the environment."
-  (let ((env-val (getenv "SCRIBA_OUT_PORT")))
-    (if env-val
-        (match (string->symbol (string-downcase env-val))
-          (('stdout)
-           (current-output-port))
-          (('stderr)
-           (current-error-port))
-          (_ (default-out-port)))
-        (default-out-port))))
+  (get-env-with-default "SCRIBA_OUT_PORT" default-out-port
+                        (lambda (val)
+                          (match (string->downcase-symbol val)
+                            ('stdout (current-output-port))
+                            ('stderr (current-error-port))
+                            (_ (default-out-port))))))
 
 (define* (%make-scriba-auto-logger #:key name
                                    (level (get-env-log-level))
@@ -88,41 +95,27 @@
                                    (pretty? (get-env-json-pretty?))
                                    (layout (get-env-layout)))
   "Creates a logger automatically configured by environment variables."
-  (let ((log-format (get-env-logger)))
-    (cond
-      ((eq? log-format
-            'json)
-       (scriba-json-logger #:name name
-                           #:level level
-                           #:out-port out-port
-                           #:pretty? pretty?
-                           #:flush-port? flush-port?
-                           #:layout layout
-                           #:timestamp-format timestamp-format))
-      ((eq? log-format
-            'color-console)
-       (scriba-color-console-logger #:name name
-                                    #:level level
-                                    #:out-port out-port
-                                    #:flush-port? flush-port?
-                                    #:layout layout
-                                    #:timestamp-format timestamp-format))
-      ((eq? log-format
-            'syslog)
-       (scriba-syslog-logger #:name name
-                             #:level level
-                             #:out-port out-port
-                             #:flush-port? flush-port?
-                             ;; probably syslog always needs all its fields
-                             ;; to be compliant to RFC-5424
-                             ;; #:layout layout
-                             #:timestamp-format timestamp-format))
-      (else (scriba-console-logger #:name name
-                                   #:level level
-                                   #:out-port out-port
-                                   #:flush-port? flush-port?
-                                   #:layout layout
-                                   #:timestamp-format timestamp-format)))))
+  (let* ((log-format (get-env-logger))
+         (constructor (match log-format
+                        ('json scriba-json-logger)
+                        ('color-console scriba-color-console-logger)
+                        ('syslog scriba-syslog-logger)
+                        (_ scriba-console-logger)))
+         (base-args (list #:name name
+                          #:level level
+                          #:out-port out-port
+                          #:flush-port? flush-port?
+                          #:timestamp-format timestamp-format))
+         (args-with-layout (if (eq? log-format
+                                    'syslog) base-args
+                               (append base-args
+                                       (list #:layout layout))))
+         (final-args (if (eq? log-format
+                              'json)
+                         (append args-with-layout
+                                 (list #:pretty? pretty?)) args-with-layout)))
+
+    (apply constructor final-args)))
 
 (define scriba-auto-logger
   (memoize-logger %make-scriba-auto-logger))

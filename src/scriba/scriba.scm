@@ -15,6 +15,24 @@
 ;; You should have received a copy of the Lesser GNU General Public License
 ;; along with scriba.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+;;
+;; This is the fundamental engine core for the Scriba logging framework. It
+;; manages internal logger records, logging level severities, dynamic execution
+;; context (MDC), optimization shortcuts, and global configuration parameters.
+;;
+;; To minimize execution overhead from muted logs in high-throughput loops,
+;; Scriba uses a level filtering system at instantiation time (`make-filtered-logger`).
+;; If a severity level falls below the configured threshold, its logging procedure
+;; is bound directly to a zero-overhead no-op function (`log-unit`). This avoids
+;; unnecessary runtime level checks during iterative logging calls.
+
+;; Thread/fiber-safe contextual tracing data can be appended dynamically using
+;; the `with-log-context` macro. This wraps execution scopes and links key-value
+;; pairs cleanly to downstream logging outputs without manual context drilling.
+
+;;; Code:
+
 (define-module (scriba scriba)
   #:use-module (srfi srfi-9)
   #:use-module (ice-9 match)

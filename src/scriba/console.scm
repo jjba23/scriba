@@ -15,6 +15,15 @@
 ;; You should have received a copy of the Lesser GNU General Public License
 ;; along with scriba.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+;;
+;; This module provides a standard plaintext, uncolorized console logging
+;; backend for the Scriba logging framework. It outputs logs cleanly structured
+;; by brackets, making it optimal for production log-aggregation sidecars,
+;; file appending, or basic interactive terminal sessions.
+
+;;; Code:
+
 (define-module (scriba console)
   #:use-module (srfi srfi-1)
   #:use-module (scriba scriba)

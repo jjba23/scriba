@@ -15,6 +15,14 @@
 ;; You should have received a copy of the Lesser GNU General Public License
 ;; along with scriba.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+;;
+;; This module provides an interactive console logger utilizing ANSI escape
+;; sequences to colorize terminal output. Text elements are visually prioritized
+;; by log severity levels, while metadata blocks are systematically dimmed.
+
+;;; Code:
+
 (define-module (scriba color-console)
   #:use-module (srfi srfi-1)
   #:use-module (scriba scriba)
@@ -101,7 +109,7 @@
                                             layout))
 
                (final-output (string-join ordered-strings " ")))
-          
+
           (format out-port "\n~a" final-output)
 
           (when flush-port?

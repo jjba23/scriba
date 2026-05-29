@@ -15,6 +15,15 @@
 ;; You should have received a copy of the Lesser GNU General Public License
 ;; along with scriba.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+;;
+;; This module implements a structured JSON logging backend for the Scriba
+;; framework using Guile's (json) module serialization. It is intended
+;; for production environments that require schema-compliant logs ready to be
+;; parsed by log shippers and indexers (e.g., Loki, Elasticsearch, Logstash, Fluentd).
+
+;;; Code:
+
 (define-module (scriba json)
   #:use-module (json)
   #:use-module (scriba scriba)
@@ -40,7 +49,7 @@
                                    (flush-port? (default-flush-port?))
                                    (layout '(level time host name message
                                                    context)))
-  
+
   (define name-field
     (get-name-field name))
 

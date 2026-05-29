@@ -15,6 +15,15 @@
 ;; You should have received a copy of the Lesser GNU General Public License
 ;; along with scriba.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+;;
+;; This module implements a logging backend structured to conform with
+;; syslog protocol specifications (such as RFC 5424 concepts). It generates
+;; string messages featuring priority framing headers, process identifier tracking,
+;; and standardized structured metadata fields.
+
+;;; Code:
+
 (define-module (scriba syslog)
   #:use-module (srfi srfi-1)
   #:use-module (scriba scriba)
