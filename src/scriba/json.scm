@@ -49,7 +49,7 @@
                                    (flush-port? (default-flush-port?))
                                    (layout '(level time host name message
                                                    context)))
-
+  
   (define name-field
     (get-name-field name))
 

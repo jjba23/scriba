@@ -54,8 +54,7 @@
                                       (timestamp-format (default-time-format))
                                       (out-port (default-out-port))
                                       (flush-port? (default-flush-port?))
-                                      (layout '(level time host name message
-                                                      context)))
+                                      (layout (default-log-layout)))
   (define name-str
     (format-name name))
 

@@ -114,7 +114,7 @@
                               'json)
                          (append args-with-layout
                                  (list #:pretty? pretty?)) args-with-layout)))
-
+    
     (apply constructor final-args)))
 
 (define scriba-auto-logger

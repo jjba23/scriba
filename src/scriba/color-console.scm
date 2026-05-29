@@ -79,8 +79,7 @@
                                             (timestamp-format (default-time-format))
                                             (out-port (default-out-port))
                                             (flush-port? (default-flush-port?))
-                                            (layout '(level time host name
-                                                            context message)))
+                                            (layout (default-log-layout)))
   (define name-str
     (format-name name))
 
@@ -109,7 +108,7 @@
                                             layout))
 
                (final-output (string-join ordered-strings " ")))
-
+          
           (format out-port "\n~a" final-output)
 
           (when flush-port?
