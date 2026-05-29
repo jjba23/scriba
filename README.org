@@ -100,7 +100,7 @@ This is especially useful for maintaining different logging behaviors between de
 
 *** Environment Configuration
 
-The auto-logger checks for ~SCRIBA_~ prefixed environment variables first (allowing application-specific overrides) before falling back to standard ~LOG_~ variables.
+The auto-logger checks for ~SCRIBA_~ prefixed environment variables.
 
 | Scriba Env Var          | Description                                                     | Default                                 |
 |-------------------------+-----------------------------------------------------------------+-----------------------------------------|
