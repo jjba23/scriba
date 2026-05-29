@@ -44,53 +44,34 @@
 (define* (level-to-priority lvl
                             #:key (facility 1))
   "Translates a scriba log level symbol to a Syslog PRI integer based on the facility."
-  (let ((severity (cond
-                    ((eq? lvl
-                          'trace)
+  (let ((severity (case lvl
+                    ((trace debug)
                      7)
-                    ((eq? lvl
-                          'debug)
-                     7)
-                    ((eq? lvl
-                          'info)
+                    ((info)
                      6)
-                    ((eq? lvl
-                          'success)
+                    ((success)
                      5)
-                    ((eq? lvl
-                          'warning)
+                    ((warning)
                      4)
-                    ((eq? lvl
-                          'error)
+                    ((error)
                      3)
-                    ((eq? lvl
-                          'critical)
+                    ((critical)
                      2)
                     (else 6))))
-    ;; Default fallback to Informational
     (+ (* facility 8) severity)))
-
-;; This is the modern format defined in RFC 5424, providing more structured and standardized data for syslog messages.
-;; <34>1 2026-05-29T09:05:00.123+02:00 mymachine.example.com su 12345 ID47 [exampleSD@32473 user="admin"] 'su root' failed
-
-;; <PRI>VERSION TIMESTAMP HOSTNAME APP-NAME PROCID MSGID [STRUCTURED-DATA] MESSAGE
-;; <PRI>: The priority field, combining the facility and severity level.
-;; VERSION: The version of the syslog protocol (e.g., ).
-;; TIMESTAMP: The timestamp of the event in the format YYYY-MM-DDThh:mm:ss.sssZ.
-;; HOSTNAME: The hostname or IP address of the device generating the message.
-;; APP-NAME: The name of the application or process generating the message.
-;; PROCID: The process ID associated with the application or process.
-;; MSGID: The ID to identify the type of message (e.g., "ID12345" for specific events).
-;; [STRUCTURED-DATA]: Optional structured data containing additional information in key-value pairs.
-;; MESSAGE: The actual log message.
 
 (define* (%make-scriba-syslog-logger #:key name
                                      (level (default-log-level))
                                      (timestamp-format iso-8601-time-format)
                                      (out-port (default-out-port))
                                      (flush-port? (default-flush-port?))
-                                     (layout '(level time host name message
-                                                     context)))
+                                     (layout '(level time
+                                                     host
+                                                     name
+                                                     process-id
+                                                     message-id
+                                                     context
+                                                     message)))
   (define name-str
     (format-name name))
 
@@ -107,6 +88,9 @@
                               (time unquote time-str)
                               (host unquote host-str)
                               (name unquote name-str)
+                              (process-id unquote
+                                          (number->string (getpid)))
+                              (message-id . "-")
                               (context unquote ctx-str)
                               (message unquote user-msg)))
 
