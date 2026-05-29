@@ -221,4 +221,4 @@ in memory, preventing redundant instantiations and reducing overhead."
   (make-parameter #t))
 
 (define default-log-layout
-  (make-parameter '(level time host name message context)))
+  (make-parameter '(level time name message context)))
