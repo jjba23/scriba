@@ -94,7 +94,7 @@ The auto-logger checks for ~SCRIBA_~ prefixed environment variables first (allow
 
 | Scriba Env Var          | Description                                                     | Default                                 |
 |-------------------------+-----------------------------------------------------------------+-----------------------------------------|
-| ~SCRIBA_LOGGER~           | The logger backend to use (~console~ , ~color-console~ or ~json~).    | ~console~                                 |
+| ~SCRIBA_LOGGER~           | The logger backend to use (~console~ , ~color-console~, ~syslog~ or ~json~). | ~console~                                 |
 | ~SCRIBA_LOG_LEVEL~        | Minimum severity level (e.g., ~debug~, ~info~, ~error~).              | ~info~                                    |
 | ~SCRIBA_JSON_PRETTY~      | Set to ~true~ or ~1~ to pretty-print JSON logs.                     | ~#f~                                      |
 | ~SCRIBA_WITH_TIMESTAMP~   | Set to ~true~ or ~1~ to include timestamps.                         | ~#t~                                      |
