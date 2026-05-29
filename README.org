@@ -111,7 +111,7 @@ The auto-logger checks for ~SCRIBA_~ prefixed environment variables.
 | ~SCRIBA_TIMESTAMP_FORMAT~ | The ~strftime~ format string (e.g., ~"%F %T %z"~).                  | ~"%F %T %Z"~                              |
 | ~SCRIBA_OUT_PORT~         | The output port to be used (e.g. ~stdout~ or ~stderr~ or TODO ~file~) | ~(current-output-port)~                   |
 | ~SCRIBA_FLUSH_PORT~       | Set to ~true~ or ~1~ to force port flushing every log action        | ~#t~                                      |
-| ~SCRIBA_LOG_LAYOUT~       | Comma-separated list of log fields                              | ~'(level time host name message context)~ |
+| ~SCRIBA_LOG_LAYOUT~       | Comma-separated list of log fields                              | ~'(level time name message context)~ |
 
 Because in its implementation, the ~get-env-*~ functions act as defaults for the ~#:key~ arguments in ~%make-scriba-auto-logger~, you can easily override the environment programmatically: ~(scriba-auto-logger #:level 'trace)~.
 
