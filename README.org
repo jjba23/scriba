@@ -90,15 +90,16 @@ Example JSON logging:
 
 The auto-logger checks for ~SCRIBA_~ prefixed environment variables first (allowing application-specific overrides) before falling back to standard ~LOG_~ variables.
 
-| Scriba Env Var          | Standard Env Var     | Description                                              | Default    |
-|-------------------------+----------------------+----------------------------------------------------------+------------|
-| ~SCRIBA_LOGGER~           | ~LOGGER~               | The logger backend to use (~console~ , ~color-console~ or ~json~). | ~console~    |
-| ~SCRIBA_LOG_LEVEL~        | ~LOG_LEVEL~            | Minimum severity level (e.g., ~debug~, ~info~, ~error~).       | ~info~       |
-| ~SCRIBA_JSON_PRETTY~      | ~LOG_JSON_PRETTY~      | Set to ~true~ or ~1~ to pretty-print JSON logs.              | ~#f~         |
-| ~SCRIBA_WITH_TIMESTAMP~   | ~LOG_WITH_TIMESTAMP~   | Set to ~true~ or ~1~ to include timestamps.                  | ~#t~         |
-| ~SCRIBA_TIMESTAMP_FORMAT~ | ~LOG_TIMESTAMP_FORMAT~ | The ~strftime~ format string (e.g., ~"%F %T %z"~).           | ~"%F %T %Z"~ |
-| ~SCRIBA_OUT_PORT~         | ~LOG_OUT_PORT~         | The output port to be used (e.g. ~stdout~ or ~stderr~ or TODO ~file~) | ~(current-output-port)~   |
-| ~SCRIBA_FLUSH_PORT~       | ~LOG_FLUSH_PORT~       | Set to ~true~ or ~1~ to force port flushing every log action | ~#t~         |
+| Scriba Env Var          | Standard Env Var     | Description                                                     | Default               |
+|-------------------------+----------------------+-----------------------------------------------------------------+-----------------------|
+| ~SCRIBA_LOGGER~           | ~LOGGER~               | The logger backend to use (~console~ , ~color-console~ or ~json~).    | ~console~               |
+| ~SCRIBA_LOG_LEVEL~        | ~LOG_LEVEL~            | Minimum severity level (e.g., ~debug~, ~info~, ~error~).              | ~info~                  |
+| ~SCRIBA_JSON_PRETTY~      | ~LOG_JSON_PRETTY~      | Set to ~true~ or ~1~ to pretty-print JSON logs.                     | ~#f~                    |
+| ~SCRIBA_WITH_TIMESTAMP~   | ~LOG_WITH_TIMESTAMP~   | Set to ~true~ or ~1~ to include timestamps.                         | ~#t~                    |
+| ~SCRIBA_TIMESTAMP_FORMAT~ | ~LOG_TIMESTAMP_FORMAT~ | The ~strftime~ format string (e.g., ~"%F %T %z"~).                  | ~"%F %T %Z"~            |
+| ~SCRIBA_OUT_PORT~         | ~LOG_OUT_PORT~         | The output port to be used (e.g. ~stdout~ or ~stderr~ or TODO ~file~) | ~(current-output-port)~ |
+| ~SCRIBA_FLUSH_PORT~       | ~LOG_FLUSH_PORT~       | Set to ~true~ or ~1~ to force port flushing every log action        | ~#t~                    |
+| ~SCRIBA_LOG_LAYOUT~       | ~LOG_LAYOUT~           | Comma-separated list of log fields                              | ~'(level time host name message context)~                    |
 
 Because in its implementation, the ~get-env-*~ functions act as defaults for the ~#:key~ arguments in ~%make-scriba-auto-logger~, you can easily override the environment programmatically: ~(scriba-auto-logger #:level 'trace)~.
 
@@ -107,7 +108,7 @@ Because in its implementation, the ~get-env-*~ functions act as defaults for the
 
 * Core Concepts
 
-Available loggers: ~console~ , ~color-console~ and ~json~
+Available loggers: ~console~ , ~color-console~, ~syslog~ and ~json~
 
 Each logger supports a shared set of options, albeit possibly with different defaults. Check the implementation of each logger for more accurate details.
 

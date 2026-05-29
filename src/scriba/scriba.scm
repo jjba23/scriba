@@ -33,6 +33,7 @@
                                  default-time-format
                                  default-log-level
                                  default-logger
+                                 default-log-layout
                                  default-out-port
                                  default-flush-port?
                                  with-log-context
@@ -218,3 +219,6 @@ in memory, preventing redundant instantiations and reducing overhead."
 
 (define default-flush-port?
   (make-parameter #t))
+
+(define default-log-layout
+  (make-parameter '(level time host name message context)))

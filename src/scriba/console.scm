@@ -55,8 +55,7 @@
                              (string-upcase (symbol->string lvl))))
           (host-str (gethostname)))
       (lambda (msg . args)
-        (let* ((time-str (if (memq 'time layout
-                                   )
+        (let* ((time-str (if (memq 'time layout)
                              (format-timestamp timestamp-format) #f))
                (ctx-str (format-context (current-log-context)))
                (user-msg (apply format #f msg args))

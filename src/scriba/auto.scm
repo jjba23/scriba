@@ -32,12 +32,21 @@
         (default-log-level))))
 
 (define (get-env-logger)
-  "Parses the log format ('console', 'color-console' or 'json') from the environment."
+  "Parses the log format ('console', 'color-console', 'syslog' or 'json') from the environment."
   (let ((env-val (or (getenv "SCRIBA_LOGGER")
                      (getenv "LOGGER"))))
     (if env-val
         (string->symbol (string-downcase env-val))
         (default-logger))))
+
+(define (get-env-layout)
+  "Parses the log layout from the environment."
+  (let ((env-val (or (getenv "SCRIBA_LOG_LAYOUT")
+                     (getenv "LOG_LAYOUT"))))
+    (if env-val
+        (map string->symbol
+             (string-split env-val #\,))
+        (default-log-layout))))
 
 (define (get-env-timestamp-format)
   "Parses the log timestamp format from the environment."
@@ -82,7 +91,8 @@
                                    (out-port (get-env-out-port))
                                    (timestamp-format (get-env-timestamp-format))
                                    (flush-port? (get-env-flush-port?))
-                                   (pretty? (get-env-json-pretty?)))
+                                   (pretty? (get-env-json-pretty?))
+                                   (layout (get-env-layout)))
   "Creates a logger automatically configured by environment variables."
   (let ((log-format (get-env-logger)))
     (cond
@@ -93,6 +103,7 @@
                            #:out-port out-port
                            #:pretty? pretty?
                            #:flush-port? flush-port?
+                           #:layout layout
                            #:timestamp-format timestamp-format))
       ((eq? log-format
             'color-console)
@@ -100,11 +111,23 @@
                                     #:level level
                                     #:out-port out-port
                                     #:flush-port? flush-port?
+                                    #:layout layout
                                     #:timestamp-format timestamp-format))
+      ((eq? log-format
+            'syslog)
+       (scriba-syslog-logger #:name name
+                             #:level level
+                             #:out-port out-port
+                             #:flush-port? flush-port?
+                             ;; probably syslog always needs all its fields
+                             ;; to be compliant to RFC-5424
+                             ;; #:layout layout
+                             #:timestamp-format timestamp-format))
       (else (scriba-console-logger #:name name
                                    #:level level
                                    #:out-port out-port
                                    #:flush-port? flush-port?
+                                   #:layout layout
                                    #:timestamp-format timestamp-format)))))
 
 (define scriba-auto-logger

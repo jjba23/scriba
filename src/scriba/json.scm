@@ -40,7 +40,7 @@
                                    (flush-port? (default-flush-port?))
                                    (layout '(level time host name message
                                                    context)))
-
+  
   (define name-field
     (get-name-field name))
 
@@ -52,8 +52,7 @@
       (lambda (msg . args)
         (let* ((user-msg (apply format #f msg args))
                (base-field `((message unquote user-msg)))
-               (time-field (if (memq 'time layout
-                                     )
+               (time-field (if (memq 'time layout)
                                (get-time-field timestamp-format) #f))
                (dynamic-ctx (current-log-context))
                (fragments `((level unquote level-field)

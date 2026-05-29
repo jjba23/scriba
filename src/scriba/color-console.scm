@@ -101,7 +101,7 @@
                                             layout))
 
                (final-output (string-join ordered-strings " ")))
-
+          
           (format out-port "\n~a" final-output)
 
           (when flush-port?
