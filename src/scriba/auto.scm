@@ -21,28 +21,26 @@
   #:use-module (scriba json)
   #:use-module (scriba color-console)
   #:use-module (scriba console)
+  #:use-module (scriba syslog)
   #:export (scriba-auto-logger))
 
 (define (get-env-log-level)
   "Parses the log level from the environment, falling back to default-level."
-  (let ((env-val (or (getenv "SCRIBA_LOG_LEVEL")
-                     (getenv "LOG_LEVEL"))))
+  (let ((env-val (getenv "SCRIBA_LOG_LEVEL")))
     (if env-val
         (string->symbol (string-downcase env-val))
         (default-log-level))))
 
 (define (get-env-logger)
   "Parses the log format ('console', 'color-console', 'syslog' or 'json') from the environment."
-  (let ((env-val (or (getenv "SCRIBA_LOGGER")
-                     (getenv "LOGGER"))))
+  (let ((env-val (getenv "SCRIBA_LOGGER")))
     (if env-val
         (string->symbol (string-downcase env-val))
         (default-logger))))
 
 (define (get-env-layout)
   "Parses the log layout from the environment."
-  (let ((env-val (or (getenv "SCRIBA_LOG_LAYOUT")
-                     (getenv "LOG_LAYOUT"))))
+  (let ((env-val (getenv "SCRIBA_LOG_LAYOUT")))
     (if env-val
         (map string->symbol
              (string-split env-val #\,))
@@ -50,15 +48,13 @@
 
 (define (get-env-timestamp-format)
   "Parses the log timestamp format from the environment."
-  (let ((env-val (or (getenv "SCRIBA_TIMESTAMP_FORMAT")
-                     (getenv "LOG_TIMESTAMP_FORMAT"))))
+  (let ((env-val (getenv "SCRIBA_TIMESTAMP_FORMAT")))
     (if env-val env-val
         (default-time-format))))
 
 (define (get-env-json-pretty?)
   "Checks if the JSON logger should pretty-print based on the environment."
-  (let ((env-val (or (getenv "SCRIBA_JSON_PRETTY")
-                     (getenv "LOG_JSON_PRETTY"))))
+  (let ((env-val (getenv "SCRIBA_JSON_PRETTY")))
     (if env-val
         (or (string=? (string-downcase env-val) "true")
             (string=? env-val "1"))
@@ -66,8 +62,7 @@
 
 (define (get-env-flush-port?)
   "Checks if the logger should flush the port every log action, based on the environment."
-  (let ((env-val (or (getenv "SCRIBA_FLUSH_PORT")
-                     (getenv "LOG_FLUSH_PORT"))))
+  (let ((env-val (getenv "SCRIBA_FLUSH_PORT")))
     (if env-val
         (or (string=? (string-downcase env-val) "true")
             (string=? env-val "1"))
@@ -75,8 +70,7 @@
 
 (define (get-env-out-port)
   "Parses the output port based on the environment."
-  (let ((env-val (or (getenv "SCRIBA_OUT_PORT")
-                     (getenv "LOG_OUT_PORT"))))
+  (let ((env-val (getenv "SCRIBA_OUT_PORT")))
     (if env-val
         (match (string->symbol (string-downcase env-val))
           (('stdout)
