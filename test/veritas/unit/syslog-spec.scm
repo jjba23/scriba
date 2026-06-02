@@ -40,7 +40,10 @@
                  (assert-no-error (lambda ()
                                     (with-log-context `((sample-1 . value-1))
                                                       (log-info s
-                                                       "Some log with context")))
+                                                       "Some log with context"))
+                                    (with-log-tags '(performance benchmark)
+                                                   (log-info s
+                                                    "Not gonna sleep!")))
                                   #:name
                                   "default configuration and logging context")))))
 
