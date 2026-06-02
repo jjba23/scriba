@@ -47,18 +47,23 @@
                                    (timestamp-format (default-time-format))
                                    (out-port (default-out-port))
                                    (flush-port? (default-flush-port?))
-                                   (layout '(level time host name message
+                                   (layout '(level tags
+                                                   time
+                                                   host
+                                                   name
+                                                   message
                                                    context)))
 
   (define name-field
     (get-name-field name))
 
   (define (make-json-printer lvl)
-    (let ((level-field `((level unquote
-                                                             (cond
-                              ((symbol? lvl) (string-upcase (symbol->string lvl)))
-                              ((boolean? lvl) lvl))
-                                )))
+    (let ((level-field (cond
+                         ((symbol? lvl)
+                          `((level unquote
+                                   (string-upcase (symbol->string lvl)))))
+                         ((boolean? lvl)
+                          '())))
           (host-field `((host unquote
                               (gethostname)))))
       (lambda (msg . args)
@@ -67,13 +72,15 @@
                (time-field (if (memq 'time layout)
                                (get-time-field timestamp-format) #f))
                (dynamic-ctx (current-log-context))
+               (dynamic-tags (if (nil? (current-log-tags)) #f
+                                 `((tags unquote (list->vector (current-log-tags))))))
                (fragments `((level unquote level-field)
+                            (tags unquote dynamic-tags)
                             (time unquote time-field)
                             (host unquote host-field)
                             (name unquote name-field)
                             (message unquote base-field)
                             (context unquote dynamic-ctx)))
-
                (ordered-fragments (map (lambda (sym)
                                          (let ((frag (assq-ref fragments sym)))
                                            (if frag frag

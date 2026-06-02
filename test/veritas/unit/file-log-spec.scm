@@ -34,7 +34,11 @@
                                     (log-warning s "some kind of warning")
                                     (log-success s "yes! we made it")
                                     (log-info s "Hello Scriba, 2 + 2 = ~a!"
-                                              (+ 2 2)))
+                                              (+ 2 2))
+                                    (with-log-tags '(performance)
+                                                   (log s "Slept 0 seconds"))
+                                    (log s
+                                     "While any editor can save your files only Emacs can save your soul !"))
                   #:name "default configuration and formatted message")
                  (assert-no-error (lambda ()
                                     (with-log-context `((sample-1 . value-1))

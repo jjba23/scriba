@@ -69,6 +69,15 @@
         (string-append ansi-dim
                        (string-join mdc " ") ansi-reset))))
 
+(define (format-tags tags)
+  "Converts an list of tags into a bracketed string layout."
+  (let ((mdc (map (lambda (x)
+                    (format #f "#~a" x)) tags)))
+    (if (nil? tags) #f
+        (string-append ansi-dim
+                       (format #f "[~a]"
+                               (string-join mdc " ")) ansi-reset))))
+
 (define (format-name name)
   "Returns the formatted logger name, or an empty string."
   (if name
@@ -85,21 +94,25 @@
 
   (define (make-color-printer lvl)
     (let* ((color (level->color lvl))
-           (level-str (format #f "~a[~a]~a" color
-                             (cond
-                              ((symbol? lvl) (string-upcase (symbol->string lvl)))
-                              ((boolean? lvl) lvl))
-                              ansi-reset))
+           (level-str (cond
+                        ((symbol? lvl)
+                         (format #f "~a[~a]~a" color
+                                 (string-upcase (symbol->string lvl))
+                                 ansi-reset))
+                        ((boolean? lvl)
+                         #f)))
            (host-str (gethostname)))
       (lambda (msg . args)
         (let* ((time-str (if (memq 'time layout)
                              (format-timestamp timestamp-format) #f))
                (ctx-str (format-context (current-log-context)))
+               (tags-str (format-tags (current-log-tags)))
                (raw-user-msg (apply format #f msg args))
 
                (user-msg (string-append color raw-user-msg ansi-reset))
 
                (parts-alist `((level unquote level-str)
+                              (tags unquote tags-str)
                               (time unquote time-str)
                               (host unquote host-str)
                               (name unquote name-str)

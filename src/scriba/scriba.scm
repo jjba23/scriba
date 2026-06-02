@@ -56,7 +56,9 @@
                                  default-out-port
                                  default-flush-port?
                                  with-log-context
+                                 with-log-tags
                                  current-log-context
+                                 current-log-tags
                                  memoize-logger))
 
 (define-syntax define-record-with-kw
@@ -134,8 +136,7 @@ The provided DOCSTRING is automatically injected into the generated procedure."
     (apply (accessor logger)
            (cons message args))))
 
-(define-logger-method log logger-log
- "Emits a log.")
+(define-logger-method log logger-log "Emits a log.")
 
 (define-logger-method log-trace logger-log-trace
  "Emits a TRACE level log.
@@ -223,9 +224,17 @@ in memory, preventing redundant instantiations and reducing overhead."
 (define current-log-context
   (make-parameter '()))
 
+(define current-log-tags
+  (make-parameter '()))
+
 (define-syntax-rule (with-log-context ctx body ...)
   "Dynamically append CTX (an alist) to the current log context for the duration of BODY."
   (parameterize ((current-log-context (append (current-log-context) ctx)))
+    body ...))
+
+(define-syntax-rule (with-log-tags tags body ...)
+  "Dynamically append TAGS (a list) to the current log tags for the duration of BODY."
+  (parameterize ((current-log-tags (append (current-log-tags) tags)))
     body ...))
 
 (define human-time-format
@@ -253,4 +262,4 @@ in memory, preventing redundant instantiations and reducing overhead."
   (make-parameter #t))
 
 (define default-log-layout
-  (make-parameter '(level time name message context)))
+  (make-parameter '(level tags time name message context)))

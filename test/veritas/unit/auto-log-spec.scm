@@ -26,7 +26,11 @@
          (let* ((s (scriba-auto-logger)))
            (test "scriba-auto-logger"
                  (assert-no-error (lambda ()
-                                    (log-info s "Hello Scriba!"))
+                                    (log-info s "Hello Scriba!")
+                                    (with-log-tags '(performance)
+                                                   (log s "Slept 0 seconds"))
+                                    (log s
+                                     "While any editor can save your files only Emacs can save your soul !"))
                                   #:name
                                   "default configuration and simple message")
                  (assert-no-error (lambda ()

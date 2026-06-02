@@ -25,7 +25,7 @@
   (suite "String"
          (let* ((string-port (open-output-string))
                 (s (scriba-console-logger #:out-port string-port
-                                          #:layout '(level name message
+                                          #:layout '(level tags name message
                                                            context))))
            (test "scriba-console-logger to string"
                  (assert-no-error (lambda ()
