@@ -37,6 +37,7 @@
   #:use-module (srfi srfi-9)
   #:use-module (ice-9 match)
   #:export (make-filtered-logger log-trace
+                                 log
                                  log-debug
                                  log-info
                                  log-success
@@ -74,6 +75,7 @@
                        mk-logger
                        (name-val logger-name)
                        (level-val logger-level)
+                       (log-proc logger-log)
                        (log-trace-proc logger-log-trace)
                        (log-debug-proc logger-log-debug)
                        (log-info-proc logger-log-info)
@@ -88,6 +90,7 @@
 
 (define* (make-filtered-logger #:key name
                                level
+                               log-proc
                                log-trace-proc
                                log-debug-proc
                                log-info-proc
@@ -97,10 +100,18 @@
                                log-critical-proc)
   "Creates a logger, mapping excluded log levels to log-unit."
   (define (maybe-proc target-level proc)
-    (if (is-in-log-level? target-level level) proc log-unit))
+    (cond
+      ((eq? target-level #t)
+       proc)
+      ((eq? target-level #f)
+       log-unit)
+      ((is-in-log-level? target-level level)
+       proc)
+      (else log-unit)))
 
   (mk-logger #:name-val name
              #:level-val level
+             #:log-proc (maybe-proc #t log-proc)
              #:log-trace-proc (maybe-proc 'trace log-trace-proc)
              #:log-debug-proc (maybe-proc 'debug log-debug-proc)
              #:log-info-proc (maybe-proc 'info log-info-proc)
@@ -122,6 +133,9 @@ The provided DOCSTRING is automatically injected into the generated procedure."
     docstring
     (apply (accessor logger)
            (cons message args))))
+
+(define-logger-method log logger-log
+ "Emits a log.")
 
 (define-logger-method log-trace logger-log-trace
  "Emits a TRACE level log.

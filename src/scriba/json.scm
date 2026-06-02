@@ -49,13 +49,16 @@
                                    (flush-port? (default-flush-port?))
                                    (layout '(level time host name message
                                                    context)))
-  
+
   (define name-field
     (get-name-field name))
 
   (define (make-json-printer lvl)
     (let ((level-field `((level unquote
-                                (string-upcase (symbol->string lvl)))))
+                                                             (cond
+                              ((symbol? lvl) (string-upcase (symbol->string lvl)))
+                              ((boolean? lvl) lvl))
+                                )))
           (host-field `((host unquote
                               (gethostname)))))
       (lambda (msg . args)
@@ -84,6 +87,7 @@
 
   (make-filtered-logger #:name name
                         #:level level
+                        #:log-proc (make-json-printer #t)
                         #:log-trace-proc (make-json-printer 'trace)
                         #:log-debug-proc (make-json-printer 'debug)
                         #:log-info-proc (make-json-printer 'info)

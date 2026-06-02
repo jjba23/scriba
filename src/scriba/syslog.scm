@@ -114,6 +114,7 @@
 
   (make-filtered-logger #:name name
                         #:level level
+                        #:log-proc (make-syslog-printer #t)
                         #:log-trace-proc (make-syslog-printer 'trace)
                         #:log-debug-proc (make-syslog-printer 'debug)
                         #:log-info-proc (make-syslog-printer 'info)

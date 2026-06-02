@@ -60,7 +60,10 @@
 
   (define (make-console-printer lvl)
     (let ((level-str (format #f "[~a]"
-                             (string-upcase (symbol->string lvl))))
+                             (cond
+                              ((symbol? lvl) (string-upcase (symbol->string lvl)))
+                              ((boolean? lvl) lvl))
+                             ))
           (host-str (gethostname)))
       (lambda (msg . args)
         (let* ((time-str (if (memq 'time layout)
@@ -85,6 +88,7 @@
 
   (make-filtered-logger #:name name
                         #:level level
+                        #:log-proc (make-console-printer #t)
                         #:log-trace-proc (make-console-printer 'trace)
                         #:log-debug-proc (make-console-printer 'debug)
                         #:log-info-proc (make-console-printer 'info)

@@ -86,7 +86,10 @@
   (define (make-color-printer lvl)
     (let* ((color (level->color lvl))
            (level-str (format #f "~a[~a]~a" color
-                              (string-upcase (symbol->string lvl)) ansi-reset))
+                             (cond
+                              ((symbol? lvl) (string-upcase (symbol->string lvl)))
+                              ((boolean? lvl) lvl))
+                              ansi-reset))
            (host-str (gethostname)))
       (lambda (msg . args)
         (let* ((time-str (if (memq 'time layout)
@@ -108,7 +111,7 @@
                                             layout))
 
                (final-output (string-join ordered-strings " ")))
-          
+
           (format out-port "\n~a" final-output)
 
           (when flush-port?
@@ -116,6 +119,7 @@
 
   (make-filtered-logger #:name name
                         #:level level
+                        #:log-proc (make-color-printer #t)
                         #:log-trace-proc (make-color-printer 'trace)
                         #:log-debug-proc (make-color-printer 'debug)
                         #:log-info-proc (make-color-printer 'info)

@@ -21,6 +21,8 @@ and compile-time macros."
 
 A Lisp structured logging library with flexibility, performance and configuration in mind, powered by Guile Scheme.
 
+[[https://jointhefreeworld.org/static-assets/scriba/screen-2026-06-02-20-11-36.png]]
+
 If you like my work, please support me by [[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with a lot of motivation.
 
 ------------------------
