@@ -222,7 +222,7 @@ For better observability, it is often useful to attach dynamic metadata to your 
   (do-some-work a b c))
 #+end_src
 
-You can construct your own logger and filter based on context,  with ~#:context-filter~ constructor argument, that accepts an alist (the context)
+You can construct your own logger and filter based on context,  with ~#:context-filter~ constructor argument, that accepts an alist (the context). Filtering is lenient (can compare symbols, numbers and strings loosely).
 
 #+begin_src scheme
 (let* ((s (scriba-console-logger #:name 'console-logger
@@ -291,7 +291,7 @@ You can also choose to use log tags to filter upon, and even go for a tag-based 
 [2026-06-02 21:21:40 CEST] [INFO] [#hello #world] Yes! [planet=earth]
 #+end_src
 
-You can construct your own logger and filter based on tags,  with ~#:tag-filter~ constructor argument, that accepts a list of symbols (the tags) .
+You can construct your own logger and filter based on tags,  with ~#:tag-filter~ constructor argument, that accepts a list of symbols (the tags) . Filtering is lenient (can compare symbols, numbers and strings loosely).
 
 Tags can be added (and nested) just like context, with ~with-log-tags~ macro.
 
