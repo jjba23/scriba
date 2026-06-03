@@ -40,5 +40,44 @@
                                   #:name
                                   "default configuration and logging context")))))
 
+(define tag-log-suite
+  (suite "Tag log suite"
+         (let* ((string-port (open-output-string))
+                (s (scriba-console-logger #:out-port string-port
+                                          #:tag-filter '(performance is quite
+                                                         important)
+                                          #:layout '(level tags name message
+                                                           context))))
+           (test "scriba-console-logger with tagging"
+                 (assert-no-error (lambda ()
+                                    (with-log-tags '(performance is quite
+                                                                 important)
+                                                   (log-message s
+                                                    "Some log without level but with tags with context"))
+                                    (let ((r (get-output-string string-port)))
+                                      (unless (string-prefix-ci?
+                                               "
+[#performance #is #quite #important] Some log without level but with tags with context"
+                                               r)
+                                        (throw 'unexpected-log-message r))))
+                                  #:name
+                                  "default configuration and logging context")))
+         (let* ((string-port (open-output-string))
+                (s (scriba-console-logger #:out-port string-port
+                                          #:tag-filter '(performance is quite
+                                                         important)
+                                          #:layout '(level tags name message
+                                                           context))))
+           (test "scriba-console-logger with tagging"
+                 (assert-no-error (lambda ()
+                                    (with-log-tags '(irrelevant tag)
+                                                   (log-message s
+                                                    "Some log without level but with irrelevanttags"))
+                                    (let ((r (get-output-string string-port)))
+                                      (unless (equal? "" r)
+                                        (throw 'unexpected-log-message r))))
+                                  #:name
+                                  "default configuration and logging context")))))
+
 (define (spec)
-  (veritas-run string-log-suite))
+  (veritas-run string-log-suite tag-log-suite))

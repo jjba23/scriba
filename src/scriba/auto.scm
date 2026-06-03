@@ -64,6 +64,13 @@
                           (map string->symbol
                                (string-split val #\,)))))
 
+(define (get-env-tag-filter)
+  "Parses the log tag filter from the environment."
+  (get-env-with-default "SCRIBA_TAG_FILTER" default-tag-filter
+                        (lambda (val)
+                          (map string->symbol
+                               (string-split val #\,)))))
+
 (define (get-env-timestamp-format)
   "Parses the log timestamp format from the environment."
   (get-env-with-default "SCRIBA_TIMESTAMP_FORMAT" default-time-format identity))
@@ -89,6 +96,7 @@
 
 (define* (%make-scriba-auto-logger #:key name
                                    (level (get-env-log-level))
+                                   (tag-filter (get-env-tag-filter))
                                    (out-port (get-env-out-port))
                                    (timestamp-format (get-env-timestamp-format))
                                    (flush-port? (get-env-flush-port?))
@@ -103,6 +111,7 @@
                         (_ scriba-console-logger)))
          (base-args (list #:name name
                           #:level level
+                          #:tag-filter tag-filter
                           #:out-port out-port
                           #:flush-port? flush-port?
                           #:timestamp-format timestamp-format))
@@ -114,7 +123,7 @@
                               'json)
                          (append args-with-layout
                                  (list #:pretty? pretty?)) args-with-layout)))
-    
+
     (apply constructor final-args)))
 
 (define scriba-auto-logger

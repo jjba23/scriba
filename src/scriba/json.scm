@@ -43,6 +43,7 @@
 
 (define* (%make-scriba-json-logger #:key name
                                    (level (default-log-level))
+                                   (tag-filter (default-tag-filter))
                                    pretty?
                                    (timestamp-format (default-time-format))
                                    (out-port (default-out-port))
@@ -94,7 +95,8 @@
 
   (make-filtered-logger #:name name
                         #:level level
-                        #:log-proc (make-json-printer #t)
+                        #:tag-filter tag-filter
+                        #:log-message-proc (make-json-printer #t)
                         #:log-trace-proc (make-json-printer 'trace)
                         #:log-debug-proc (make-json-printer 'debug)
                         #:log-info-proc (make-json-printer 'info)

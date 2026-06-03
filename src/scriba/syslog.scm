@@ -79,6 +79,7 @@
 
 (define* (%make-scriba-syslog-logger #:key name
                                      (level (default-log-level))
+                                     (tag-filter (default-tag-filter))
                                      (timestamp-format iso-8601-time-format)
                                      (out-port (default-out-port))
                                      (flush-port? (default-flush-port?))
@@ -125,7 +126,8 @@
 
   (make-filtered-logger #:name name
                         #:level level
-                        #:log-proc (make-syslog-printer #t)
+                        #:tag-filter tag-filter
+                        #:log-message-proc (make-syslog-printer #t)
                         #:log-trace-proc (make-syslog-printer 'trace)
                         #:log-debug-proc (make-syslog-printer 'debug)
                         #:log-info-proc (make-syslog-printer 'info)

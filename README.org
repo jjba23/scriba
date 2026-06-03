@@ -108,16 +108,17 @@ This is especially useful for maintaining different logging behaviors between de
 
 The auto-logger checks for ~SCRIBA_~ prefixed environment variables.
 
-| Scriba Env Var          | Description                                                     | Default                                 |
-|-------------------------+-----------------------------------------------------------------+-----------------------------------------|
+| Scriba Env Var          | Description                                                          | Default                                 |
+|-------------------------+----------------------------------------------------------------------+-----------------------------------------|
 | ~SCRIBA_LOGGER~           | The logger backend to use (~console~ , ~color-console~, ~syslog~ or ~json~). | ~console~                                 |
-| ~SCRIBA_LOG_LEVEL~        | Minimum severity level (e.g., ~debug~, ~info~, ~error~).              | ~info~                                    |
-| ~SCRIBA_JSON_PRETTY~      | Set to ~true~ or ~1~ to pretty-print JSON logs.                     | ~#f~                                      |
-| ~SCRIBA_WITH_TIMESTAMP~   | Set to ~true~ or ~1~ to include timestamps.                         | ~#t~                                      |
-| ~SCRIBA_TIMESTAMP_FORMAT~ | The ~strftime~ format string (e.g., ~"%F %T %z"~).                  | ~"%F %T %Z"~                              |
-| ~SCRIBA_OUT_PORT~         | The output port to be used (e.g. ~stdout~ or ~stderr~ or TODO ~file~) | ~(current-output-port)~                   |
-| ~SCRIBA_FLUSH_PORT~       | Set to ~true~ or ~1~ to force port flushing every log action        | ~#t~                                      |
-| ~SCRIBA_LOG_LAYOUT~       | Comma-separated list of log fields                              | ~'(level tags time name message context)~ |
+| ~SCRIBA_LOG_LEVEL~        | Minimum severity level (e.g., ~debug~, ~info~, ~error~).                   | ~info~                                    |
+| ~SCRIBA_JSON_PRETTY~      | Set to ~true~ or ~1~ to pretty-print JSON logs.                          | ~#f~                                      |
+| ~SCRIBA_WITH_TIMESTAMP~   | Set to ~true~ or ~1~ to include timestamps.                              | ~#t~                                      |
+| ~SCRIBA_TIMESTAMP_FORMAT~ | The ~strftime~ format string (e.g., ~"%F %T %z"~).                       | ~"%F %T %Z"~                              |
+| ~SCRIBA_OUT_PORT~         | The output port to be used (e.g. ~stdout~ or ~stderr~ or TODO ~file~)      | ~(current-output-port)~                   |
+| ~SCRIBA_FLUSH_PORT~       | Set to ~true~ or ~1~ to force port flushing every log action             | ~#t~                                      |
+| ~SCRIBA_LOG_LAYOUT~       | Comma-separated list of log fields                                   | ~'(level tags time name message context)~ |
+| ~SCRIBA_TAG_FILTER~       | Comma-separated list of tags to filter on (only log if matching)     | ~'()~                                   |
 
 Because in its implementation, the ~get-env-*~ functions act as defaults for the ~#:key~ arguments in ~%make-scriba-auto-logger~, you can easily override the environment programmatically: ~(scriba-auto-logger #:level 'trace)~.
 
@@ -141,7 +142,7 @@ See [[file:src/scriba/]] for more details.
 (let* ((s (scriba-console-logger #:name 'console-logger
                                  #:level 'info)))
   (log-info s "1 + 1 = ~a" (+ 1 1))
-  (log s "This message will always be logged (no level)")
+  (log-message s "This message will always be logged (no level)")
   (log-error s "A critical error occurred"))
 #+end_src
 
@@ -154,7 +155,7 @@ See [[file:src/scriba/]] for more details.
                               #:level 'info
                               #:pretty? #f)))
   (log-info s "2 + 2 = ~a" (+ 2 2))
-  (log s "This message will always be logged (no level)")
+  (log-message s "This message will always be logged (no level)")
   (log-warning s "Something suspicious happened"))
 #+end_src
 
@@ -167,7 +168,7 @@ All logger implementations share the same fundamental traits and supported funct
 
 For Scriba, log level is an opt-in concept. Not every system benefits from the same kind of log filtering. Other approaches like tag-based or property-based logging are powerful as well.
 
-So you can e.g. ~log-info~ or you can just do ~log~ if you always want to log.
+So you can e.g. ~log-info~ or you can just do ~log-message~ if you always want to log.
 
 In the core inner workings of Scriba, we consider log level ~#t~ to mean always log, and ~#f~ to never log.
 
@@ -246,10 +247,8 @@ You can easily customize the log format and disable certain fields via layout
 
 You can also choose to use log tags to filter upon, and even go for a tag-based / property-based logging approach where your don't even need log level. Such as every log can have context, every log can also have tags.
 
-TODO: Allow filtering on log tags
-
 #+begin_src
-[#performance] [2026-06-02 21:19:24 CEST] Slept 0 seconds
+[#performance #db] [2026-06-02 21:19:24 CEST] Slept 0 seconds
 [SUCCESS] [2026-06-02 21:19:24 CEST] yes! we made it
 [2026-06-02 21:21:40 CEST] [INFO] [#hello #world] Yes! [planet=earth]
 #+end_src

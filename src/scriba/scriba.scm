@@ -37,7 +37,7 @@
   #:use-module (srfi srfi-9)
   #:use-module (ice-9 match)
   #:export (make-filtered-logger log-trace
-                                 log
+                                 log-message
                                  log-debug
                                  log-info
                                  log-success
@@ -55,6 +55,7 @@
                                  default-log-layout
                                  default-out-port
                                  default-flush-port?
+                                 default-tag-filter
                                  with-log-context
                                  with-log-tags
                                  current-log-context
@@ -77,7 +78,8 @@
                        mk-logger
                        (name-val logger-name)
                        (level-val logger-level)
-                       (log-proc logger-log)
+                       (tag-filter-val logger-tag-filter)
+                       (log-message-proc logger-log-message)
                        (log-trace-proc logger-log-trace)
                        (log-debug-proc logger-log-debug)
                        (log-info-proc logger-log-info)
@@ -92,7 +94,8 @@
 
 (define* (make-filtered-logger #:key name
                                level
-                               log-proc
+                               tag-filter
+                               log-message-proc
                                log-trace-proc
                                log-debug-proc
                                log-info-proc
@@ -113,7 +116,8 @@
 
   (mk-logger #:name-val name
              #:level-val level
-             #:log-proc (maybe-proc #t log-proc)
+             #:tag-filter-val tag-filter
+             #:log-message-proc (maybe-proc #t log-message-proc)
              #:log-trace-proc (maybe-proc 'trace log-trace-proc)
              #:log-debug-proc (maybe-proc 'debug log-debug-proc)
              #:log-info-proc (maybe-proc 'info log-info-proc)
@@ -136,7 +140,7 @@ The provided DOCSTRING is automatically injected into the generated procedure."
     (apply (accessor logger)
            (cons message args))))
 
-(define-logger-method log logger-log "Emits a log.")
+(define-logger-method log-message logger-log-message "Emits a log.")
 
 (define-logger-method log-trace logger-log-trace
  "Emits a TRACE level log.
@@ -248,6 +252,9 @@ in memory, preventing redundant instantiations and reducing overhead."
 
 (define default-log-level
   (make-parameter 'info))
+
+(define default-tag-filter
+  (make-parameter '()))
 
 (define default-time-format
   (make-parameter human-time-format))

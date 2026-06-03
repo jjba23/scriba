@@ -85,6 +85,7 @@
 
 (define* (%make-scriba-color-console-logger #:key name
                                             (level (default-log-level))
+                                            (tag-filter (default-tag-filter))
                                             (timestamp-format (default-time-format))
                                             (out-port (default-out-port))
                                             (flush-port? (default-flush-port?))
@@ -132,7 +133,8 @@
 
   (make-filtered-logger #:name name
                         #:level level
-                        #:log-proc (make-color-printer #t)
+                        #:tag-filter tag-filter
+                        #:log-message-proc (make-color-printer #t)
                         #:log-trace-proc (make-color-printer 'trace)
                         #:log-debug-proc (make-color-printer 'debug)
                         #:log-info-proc (make-color-printer 'info)

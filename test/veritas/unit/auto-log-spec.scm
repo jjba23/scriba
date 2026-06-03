@@ -28,8 +28,8 @@
                  (assert-no-error (lambda ()
                                     (log-info s "Hello Scriba!")
                                     (with-log-tags '(performance)
-                                                   (log s "Slept 0 seconds"))
-                                    (log s
+                                                   (log-message s "Slept 0 seconds"))
+                                    (log-message s
                                      "While any editor can save your files only Emacs can save your soul !"))
                                   #:name
                                   "default configuration and simple message")

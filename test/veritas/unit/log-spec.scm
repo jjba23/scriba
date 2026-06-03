@@ -39,7 +39,7 @@
                                                    (with-log-context `((planet . earth))
                                                                      (log-info sc "Yes!")))
                                     (with-log-tags '(performance)
-                                                   (log s "Slept 0 seconds")))
+                                                   (log-message s "Slept 0 seconds")))
                                   #:name
                                   "default configuration and simple message")
                  (assert-no-error (lambda ()
@@ -52,7 +52,7 @@
                                                                     "IN AQUA"))
                                     (log-success sc "ja, wir schaffen das!")
                                     (log-success s "yes! we made it")
-                                    (log s
+                                    (log-message s
                                      "While any editor can save your files only Emacs can save your soul !")
                                     (log-info s "Hello Scriba, 2 + 2 = ~a!"
                                               (+ 2 2)))
@@ -75,8 +75,8 @@
                                     (log-warning s "some kind of warning")
                                     (log-success s "yes! we made it")
                                     (with-log-tags '(performance)
-                                                   (log s "Slept 0 seconds"))
-                                    (log s
+                                                   (log-message s "Slept 0 seconds"))
+                                    (log-message s
                                      "While any editor can save your files only Emacs can save your soul !")
                                     (log-info s
                                      "Hello Scriba, current module is: ~a!"

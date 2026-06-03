@@ -41,6 +41,9 @@
                                     (with-log-context `((sample-1 . value-1))
                                                       (log-info s
                                                        "Some log with context"))
+                                    (with-log-context `((sample-1 . value-1))
+                                                      (log-message s
+                                                       "Some log with context"))
                                     (with-log-tags '(performance benchmark)
                                                    (log-info s
                                                     "Not gonna sleep!")))
