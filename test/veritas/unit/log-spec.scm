@@ -26,86 +26,114 @@
   #:export (spec))
 
 (define log-suite
-  (suite "Log"
-         (let* ((s (scriba-console-logger #:layout '(time level tags message
-                                                          context)))
-                (sc (scriba-color-console-logger #:layout '(time level tags
-                                                                 message
-                                                                 context))))
-           (test "scriba-console-logger"
+  (suite "Core Engine - Text & JSON Backends"
+         (let* ((console-logger (scriba-console-logger #:layout '(time level
+                                                                  tags message
+                                                                  context)))
+                (color-logger (scriba-color-console-logger #:layout '(time
+                                                                      level
+                                                                      tags
+                                                                      message
+                                                                      context))))
+           
+           (test "Standard and Colorized Console Output Handling"
                  (assert-no-error (lambda ()
-                                    (log-info s "Hello Scriba!")
-                                    (with-log-tags '(hello world) (log-info sc "Hello World!")
+                                    (log-info console-logger "Hello Scriba!")
+                                    (with-log-tags '(hello world)
+                                                   (log-info color-logger
+                                                             "Hello World!")
                                                    (with-log-context `((planet . earth))
-                                                                     (log-info sc "Yes!")))
+                                                                     (log-info
+                                                                      color-logger
+                                                                      "Yes!")))
                                     (with-log-tags '(performance)
-                                                   (log-message s "Slept 0 seconds")))
-                                  #:name
-                                  "default configuration and simple message")
+                                                   (log-message console-logger
+                                                    "Slept 0 seconds")))
+                  #:name
+                  "Processes baseline strings, colorized streams, and multi-layered tag/context parameters without faults")
+
                  (assert-no-error (lambda ()
-                                    (log-debug s
+                                    ;; Low level debug should be intercepted and muted
+                                    (log-debug console-logger
                                      "we should never see this since log level is not high enough!")
-                                    (log-warning s "some kind of warning")
-                                    (log-critical sc "IN VINO VERITAS")
+                                    (log-warning console-logger
+                                                 "some kind of warning")
+                                    (log-critical color-logger
+                                                  "IN VINO VERITAS")
                                     (with-log-context `(("SANITAS" . "CARPE DIEM"))
-                                                      (log-critical sc
-                                                                    "IN AQUA"))
-                                    (log-success sc "ja, wir schaffen das!")
-                                    (log-success s "yes! we made it")
-                                    (log-message s
+                                                      (log-critical
+                                                       color-logger "IN AQUA"))
+                                    (log-success color-logger
+                                                 "ja, wir schaffen das!")
+                                    (log-success console-logger
+                                                 "yes! we made it")
+                                    (log-message console-logger
                                      "While any editor can save your files only Emacs can save your soul !")
-                                    (log-info s "Hello Scriba, 2 + 2 = ~a!"
+                                    (log-info console-logger
+                                              "Hello Scriba, 2 + 2 = ~a!"
                                               (+ 2 2)))
-                  #:name "default configuration and formatted message")
+                  #:name
+                  "Enforces strict severity thresholds and evaluates format string arguments across console writers")
+
                  (assert-no-error (lambda ()
                                     (with-log-context `((sample-1 . value-1))
-                                                      (log-info s
+                                                      (log-info console-logger
                                                        "Some log with context")))
-                                  #:name
-                                  "default configuration and logging context")))
-         (let* ((s (scriba-json-logger)))
-           (test "scriba-json-logger"
+                  #:name
+                  "Safely captures and binds flat associative context pairs during console emission")))
+
+         (let* ((json-logger (scriba-json-logger)))
+           (test "JSON Structured Map Output Pipeline"
                  (assert-no-error (lambda ()
-                                    (log-info s "Hello Scriba!"))
-                                  #:name
-                                  "default configuration and simple message")
+                                    (log-info json-logger "Hello Scriba!"))
+                  #:name
+                  "Serializes clean, unformatted top-level message keys to JSON text fields")
+
                  (assert-no-error (lambda ()
-                                    (log-debug s
+                                    ;; Low level debug should be intercepted and muted
+                                    (log-debug json-logger
                                      "we should never see this since log level is not high enough!")
-                                    (log-warning s "some kind of warning")
-                                    (log-success s "yes! we made it")
+                                    (log-warning json-logger
+                                                 "some kind of warning")
+                                    (log-success json-logger "yes! we made it")
                                     (with-log-tags '(performance)
-                                                   (log-message s "Slept 0 seconds"))
-                                    (log-message s
+                                                   (log-message json-logger
+                                                    "Slept 0 seconds"))
+                                    (log-message json-logger
                                      "While any editor can save your files only Emacs can save your soul !")
-                                    (log-info s
+                                    (log-info json-logger
                                      "Hello Scriba, current module is: ~a!"
                                      (current-module)))
-                  #:name "default configuration and formatted message")
+                  #:name
+                  "Mutes low-severity data and marshals dynamic evaluation states into complex JSON trees")
+
                  (assert-no-error (lambda ()
                                     (with-log-context `((sample-2 . value-2))
-                                                      (log-info s
+                                                      (log-info json-logger
                                                        "Some log with context")))
-                                  #:name
-                                  "default configuration and logging context")))))
+                  #:name
+                  "Encodes active metadata maps as nested JSON objects within the parent scheme payload")))))
 
 (define log-level-suite
-  (suite "Log Level"
-         (apply test "is-in-log-level?"
-                (map (lambda (c)
-                       (if (caddr c)
-                           (assert-true (is-in-log-level? (car c)
-                                                          (cadr c))
-                                        #:name (format #f
-                                                       "~a is allowed in ~a"
-                                                       (car c)
-                                                       (cadr c)))
-                           (assert-false (is-in-log-level? (car c)
-                                                           (cadr c))
-                                         #:name (format #f
-                                                 "~a is not allowed in ~a"
-                                                 (car c)
-                                                 (cadr c)))))
+  (suite "Severity Threshold Hierarchy Validation"
+         (apply test "Log Level Precedence Visibility Matrix"
+                (map (lambda (case-record)
+                       (let ((target-level (car case-record))
+                             (configured-context (cadr case-record))
+                             (should-allow? (caddr case-record)))
+                         (if should-allow?
+                             (assert-true (is-in-log-level? target-level
+                                           configured-context)
+                                          #:name (format #f
+                                                  "Permit: [~a] visibility should be active inside a [~a] logging threshold"
+                                                  target-level
+                                                  configured-context))
+                             (assert-false (is-in-log-level? target-level
+                                            configured-context)
+                                           #:name (format #f
+                                                   "Suppress: [~a] visibility should be discarded inside a [~a] logging threshold"
+                                                   target-level
+                                                   configured-context)))))
                      '((trace trace #t)
                        (trace debug #f)
                        (debug critical #f)

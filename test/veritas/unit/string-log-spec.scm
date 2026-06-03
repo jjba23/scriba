@@ -22,61 +22,75 @@
   #:export (spec))
 
 (define string-log-suite
-  (suite "String"
+  (suite "Console Backend - String Stream Output"
          (let* ((string-port (open-output-string))
-                (s (scriba-console-logger #:out-port string-port
-                                          #:layout '(level tags name message
-                                                           context))))
-           (test "scriba-console-logger to string"
+                (logger (scriba-console-logger #:out-port string-port
+                                               #:layout '(level tags name
+                                                                message
+                                                                context))))
+           
+           (test "Layout and Context Layout Rendering"
                  (assert-no-error (lambda ()
-                                    (with-log-context `((sample-1 . value-1))
-                                                      (log-info s
+                                    (with-log-context '((sample-1 . value-1))
+                                                      (log-info logger
                                                        "Some log with context"))
-                                    (let ((r (get-output-string string-port)))
-                                      (unless (string-prefix-ci?
-                                               "\n[INFO] Some log with context"
-                                               r)
-                                        (throw 'unexpected-log-message r))))
-                                  #:name
-                                  "default configuration and logging context")))))
+                                    (let ((result (get-output-string
+                                                   string-port)))
+                                      (unless (equal?
+                                               "
+[INFO] Some log with context [sample-1=value-1]"
+                                               result)
+                                        (throw 'unexpected-log-message result))))
+                  #:name
+                  "Formats severe levels and layout records to raw string buffers accurately")))))
 
 (define tag-log-suite
-  (suite "Tag log suite"
+  (suite "Dynamic Tag Filtering Pipeline"
+         ;; Matching tags
          (let* ((string-port (open-output-string))
-                (s (scriba-console-logger #:out-port string-port
-                                          #:tag-filter '(performance is quite
-                                                         important)
-                                          #:layout '(level tags name message
-                                                           context))))
-           (test "scriba-console-logger with tagging"
+                (logger (scriba-console-logger #:out-port string-port
+                                               #:tag-filter '(performance is
+                                                              quite important)
+                                               #:layout '(level tags name
+                                                                message
+                                                                context))))
+           
+           (test "Matching Tag Interception"
                  (assert-no-error (lambda ()
                                     (with-log-tags '(performance is quite
                                                                  important)
-                                                   (log-message s
+                                                   (log-message logger
                                                     "Some log without level but with tags with context"))
-                                    (let ((r (get-output-string string-port)))
+                                    (let ((result (get-output-string
+                                                   string-port)))
                                       (unless (string-prefix-ci?
                                                "
 [#performance #is #quite #important] Some log without level but with tags with context"
-                                               r)
-                                        (throw 'unexpected-log-message r))))
-                                  #:name
-                                  "default configuration and logging context")))
+                                               result)
+                                        (throw 'unexpected-log-message result))))
+                  #:name
+                  "Passes execution and prepends active tags when context matches the filter hash")))
+
+         ;; Non-matching tags
          (let* ((string-port (open-output-string))
-                (s (scriba-console-logger #:out-port string-port
-                                          #:tag-filter '(performance is quite
-                                                         important)
-                                          #:layout '(level tags name message
-                                                           context))))
-           (test "scriba-console-logger with tagging"
+                (logger (scriba-console-logger #:out-port string-port
+                                               #:tag-filter '(performance is
+                                                              quite important)
+                                               #:layout '(level tags name
+                                                                message
+                                                                context))))
+           
+           (test "Non-Matching Tag Suppression"
                  (assert-no-error (lambda ()
                                     (with-log-tags '(irrelevant tag)
-                                                   (log-message s
+                                                   (log-message logger
                                                     "Some log without level but with irrelevanttags"))
-                                    (let ((r (get-output-string string-port)))
-                                      (unless (equal? "" r)
-                                        (throw 'unexpected-log-message r))))
-                                  #:name "filters out irrelevant tags")))))
+                                    (let ((result (get-output-string
+                                                   string-port)))
+                                      (unless (equal? "" result)
+                                        (throw 'unexpected-log-message result))))
+                  #:name
+                  "Intercepts unlisted tag streams and silently drops them via log-unit redirection")))))
 
 (define (spec)
   (veritas-run string-log-suite tag-log-suite))
