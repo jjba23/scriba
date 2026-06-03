@@ -259,11 +259,15 @@ You can also choose to use log tags to filter upon, and even go for a tag-based 
 
 You can construct your own logger and filiter based on tags,  with ~#:tag-filter~ constructor argument, that accepts a list of symbols (the tags) .
 
+Tags can be added (and nested) just like context, with ~with-log-tags~ macro.
+
 #+begin_src scheme
 (let* ((s (scriba-console-logger #:name 'console-logger
                               #:level 'info
-                              #:tags '(benchmark db performance))))
-  (log-info s "2 + 2 = ~a" (+ 2 2)))
+                              ;; filter on tags
+                              #:tag-filter '(benchmark db performance))))
+  (with-log-tags '(benchmark db performance)
+                 (log-info s "2 + 2 = ~a" (+ 2 2)))
 #+end_src
 
 -------
