@@ -34,6 +34,7 @@
 
 (define-module (scriba scriba)
   #:use-module (srfi srfi-9)
+  #:use-module (srfi srfi-1)
   #:use-module (ice-9 match)
   #:export (make-filtered-logger log-trace
                                  log-message
@@ -101,38 +102,66 @@ Used across the framework as a terminal sink for disabled log statements."
 
 (define (tag-match? filter-tags current-tags)
   "Determine if the current execution context satisfies the logger's tag filter.
-
-Returns #t if FILTER-TAGS is empty (acting as a wildcard that permits all logs),
-or if there is an intersection of at least one element between FILTER-TAGS and
-CURRENT-TAGS. Returns #f if a non-empty filter shares no tags with the current tags."
+Returns #t if FILTER-TAGS is empty (acting as a wildcard), or if there is a
+lenient intersection (cross-comparing strings, symbols, and numbers) of at
+least one element between FILTER-TAGS and CURRENT-TAGS."
   (or (null? filter-tags)
-      (let loop
-        ((tags current-tags))
-        (cond
-          ((null? tags)
-           #f)
-          ((memq (car tags) filter-tags)
-           #t)
-          (else (loop (cdr tags)))))))
+      (any (lambda (curr-tag)
+             (any (lambda (filt-tag)
+                    (loose-equal? curr-tag filt-tag)) filter-tags))
+           current-tags)))
+
+(define (loose-equal? a b)
+  "Compare two values leniently. If they are structurally identical, returns #t.
+If they are cross-boundary types (strings, symbols, or numbers), they are coerced
+to strings for a loose value comparison."
+  (cond
+    ((equal? a b)
+     #t)
+    ;; Symbol vs String
+    ((and (symbol? a)
+          (string? b))
+     (string=? (symbol->string a) b))
+    ((and (string? a)
+          (symbol? b))
+     (string=? a
+               (symbol->string b)))
+    ;; Number vs String
+    ((and (number? a)
+          (string? b))
+     (string=? (number->string a) b))
+    ((and (string? a)
+          (number? b))
+     (string=? a
+               (number->string b)))
+    ;; Number vs Symbol
+    ((and (number? a)
+          (symbol? b))
+     (string=? (number->string a)
+               (symbol->string b)))
+    ((and (symbol? a)
+          (number? b))
+     (string=? (symbol->string a)
+               (number->string b)))
+    (else #f)))
 
 (define (context-match? filter-context current-context)
   "Determine if the current execution context satisfies the logger's context filter alist.
 
 Returns #t if FILTER-CONTEXT is empty (acting as a wildcard that permits all logs),
-or if at least one key-value pair specified in FILTER-CONTEXT matches exactly within
-CURRENT-CONTEXT. Returns #f if no matching pairs are found."
+or if at least one key-value pair specified in FILTER-CONTEXT matches loosely within
+CURRENT-CONTEXT."
   (or (null? filter-context)
-      (let loop
-        ((ctx filter-context))
-        (cond
-          ((null? ctx)
-           #f)
-          ((let ((found (assoc (caar ctx) current-context)))
-             (and found
-                  (equal? (cdar ctx)
-                          (cdr found))))
-           #t)
-          (else (loop (cdr ctx)))))))
+      (any (lambda (filter-pair)
+             (let ((f-key (car filter-pair))
+                   (f-val (cdr filter-pair)))
+               ;; Check if this filter pair matches any pair in the current context
+               (any (lambda (curr-pair)
+                      (and (loose-equal? f-key
+                                         (car curr-pair))
+                           (loose-equal? f-val
+                                         (cdr curr-pair)))) current-context)))
+           filter-context)))
 
 (define* (maybe-log-proc #:key level
                          target-level
