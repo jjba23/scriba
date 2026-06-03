@@ -189,8 +189,6 @@ The standard hierarchy is:
 
 ** Log Context
 
-TODO: allow filtering on context
-
 For better observability, it is often useful to attach dynamic metadata to your log lines. Scriba handles this seamlessly via contexts:
 
 #+begin_src scheme
@@ -199,6 +197,8 @@ For better observability, it is often useful to attach dynamic metadata to your 
   ;; Any deeper function calls that log will automatically include this context!
   (do-some-work a b c))
 #+end_src
+
+**** TODO: implement context-based filtering but keep it just like tags that it's no-cost when opting-out
 
 -------------------------
 
