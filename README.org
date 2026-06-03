@@ -137,7 +137,11 @@ Loggers are (optionally named) entities responsible for emitting logs. They act 
 
 See [[file:src/scriba/]] for more details.
 
-*Console Logger:*
+All logger implementations share the same fundamental traits and supported functions. Some properties, and default values are specific to certain loggers.
+
+See also the project's unit tests for more complex configurations: [[file:test/veritas/unit/log-spec.scm]] and [[file:test/veritas/unit/auto-log-spec.scm]]
+
+*** Console Logger
 #+begin_src scheme
 (use-module (scriba scriba)
             (scriba console))
@@ -149,7 +153,18 @@ See [[file:src/scriba/]] for more details.
   (log-error s "A critical error occurred"))
 #+end_src
 
-*JSON Logger:*
+*** Color Console Logger
+#+begin_src scheme
+(use-module (scriba scriba)
+            (scriba color-console))
+
+(let* ((s (scriba-color-console-logger #:level 'info)))
+  (log-info s "1 + 1 = ~a" (+ 1 1))
+  (log-message s "This message will always be logged (no level)")
+  (log-error s "A critical error occurred"))
+#+end_src
+
+*** JSON Logger
 #+begin_src scheme
 (use-module (scriba scriba)
             (scriba json))
@@ -157,12 +172,20 @@ See [[file:src/scriba/]] for more details.
 (let* ((s (scriba-json-logger #:name 'json-logger
                               #:level 'info
                               #:pretty? #f)))
-  (log-info s "2 + 2 = ~a" (+ 2 2))
-  (log-message s "This message will always be logged (no level)")
   (log-warning s "Something suspicious happened"))
 #+end_src
 
-All logger implementations share the same fundamental traits and supported functions. See the project's unit tests for more complex configurations: [[file:test/veritas/unit/log-spec.scm]] and [[file:test/veritas/unit/auto-log-spec.scm]]
+*** Syslog Logger
+#+begin_src scheme
+(use-module (scriba scriba)
+            (scriba syslog))
+
+(let* ((s (scriba-syslog-logger #:level 'info)))
+  (log-info s "2 + 2 = ~a" (+ 2 2))
+  (log-warning s "Something suspicious happened"))
+#+end_src
+
+
 
 -------------------------
 
