@@ -236,7 +236,7 @@ Logging to a string port (in-memory) can be useful to capture logs and test that
 
 ** Log Format
 
-You can easily customize the log format and disable certain fields via layout
+You can easily customize the log format and disable certain fields via ~#:layout~
 #+begin_src scheme
 (let* ((s (scriba-console-logger #:name 'console-logger
                               #:level 'info
@@ -257,7 +257,14 @@ You can also choose to use log tags to filter upon, and even go for a tag-based 
 [2026-06-02 21:21:40 CEST] [INFO] [#hello #world] Yes! [planet=earth]
 #+end_src
 
-You can construct your own logger and filiter based on tags,  with ~#:tag-filter~ constructor argument, that accepts a list of symbols (the tags).
+You can construct your own logger and filiter based on tags,  with ~#:tag-filter~ constructor argument, that accepts a list of symbols (the tags) .
+
+#+begin_src scheme
+(let* ((s (scriba-console-logger #:name 'console-logger
+                              #:level 'info
+                              #:tags '(benchmark db performance))))
+  (log-info s "2 + 2 = ~a" (+ 2 2)))
+#+end_src
 
 -------
 
@@ -309,9 +316,11 @@ A great deal of effort is taken to keep runtime overhead strictly minimal, and S
 Some boilerplate operations, such as generating keyword-based record constructors (~define-record-with-kw~) and generating the domain logging functions (~define-logger-method~), are handled by Scheme macros that expand natively at compile-time.
 
 ** Efficient Context Management
-Attaching metadata via ~with-log-context~ does not mutate global state or require expensive thread-locking.
+Attaching metadata via ~with-log-context~   and ~with-log-tags~ does not mutate global state or require expensive thread-locking or mutexes or anything like that.
 
 It relies on Guile's native ~parameterize~, which securely and efficiently handles dynamically scoped, thread-local variables.
+
+Log tags can be filtered on at runtime, so you can log exclusively lines that contain a tag, also not even needing log levels and allowing more fine-grained control.
 
 ------------------------
 
