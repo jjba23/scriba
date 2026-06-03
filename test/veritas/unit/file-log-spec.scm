@@ -25,23 +25,34 @@
   (open-output-file "test.log"))
 
 (define file-log-suite
-  (suite "File"
-         (let* ((s (scriba-console-logger #:out-port file-port)))
-           (test "scriba-console-logger to file"
+  (suite "Console Backend - File System Destination"
+         (let* ((file-logger (scriba-console-logger #:out-port file-port)))
+
+           (test "File Destination Logging Operations"
                  (assert-no-error (lambda ()
-                                    (log-debug s
+                                    ;; Verify muted thresholds are still handled safely on file ports
+                                    (log-debug file-logger
                                      "we should never see this since log level is not high enough!")
-                                    (log-warning s "some kind of warning")
-                                    (log-success s "yes! we made it")
-                                    (log-info s "Hello Scriba, 2 + 2 = ~a!"
-                                              (+ 2 2)))
-                  #:name "default configuration and formatted message")
+                                    (log-warning file-logger
+                                                 "some kind of warning")
+                                    (log-success file-logger "yes! we made it")
+                                    (log-info file-logger
+                                              "Hello Scriba, 2 + 2 = ~a!"
+                                              (+ 2 2))
+                                    (with-log-tags '(performance)
+                                                   (log-message file-logger
+                                                    "Slept 0 seconds"))
+                                    (log-message file-logger
+                                     "While any editor can save your files only Emacs can save your soul !"))
+                  #:name
+                  "Enforces severity thresholds and drops formatted payloads to a file stream without faults")
+
                  (assert-no-error (lambda ()
                                     (with-log-context `((sample-1 . value-1))
-                                                      (log-info s
+                                                      (log-info file-logger
                                                        "Some log with context")))
-                                  #:name
-                                  "default configuration and logging context")))))
+                  #:name
+                  "Appends dynamic Mapped Diagnostic Context (MDC) properties onto a file-bound record")))))
 
 (define (spec)
   (veritas-run file-log-suite)

@@ -45,6 +45,14 @@
         (format #f "[~a]"
                 (string-join mdc " ")))))
 
+(define (format-tags tags)
+  "Converts a list of tags into a bracketed string layout: [#a #b #c]."
+  (let ((mdc (map (lambda (x)
+                    (format #f "#~a" x)) tags)))
+    (if (nil? tags) #f
+        (format #f "[~a]"
+                (string-join mdc " ")))))
+
 (define (format-name name)
   "Returns the formatted logger name, or an empty string."
   (if name
@@ -71,6 +79,7 @@
 
 (define* (%make-scriba-syslog-logger #:key name
                                      (level (default-log-level))
+                                     (tag-filter (default-tag-filter))
                                      (timestamp-format iso-8601-time-format)
                                      (out-port (default-out-port))
                                      (flush-port? (default-flush-port?))
@@ -80,7 +89,8 @@
                                                      process-id
                                                      message-id
                                                      context
-                                                     message)))
+                                                     message
+                                                     tags)))
   (define name-str
     (format-name name))
 
@@ -92,8 +102,10 @@
         (let* ((time-str (if (memq 'time layout)
                              (format-timestamp timestamp-format) #f))
                (ctx-str (format-context (current-log-context)))
+               (tags-str (format-tags (current-log-tags)))
                (user-msg (apply format #f msg args))
                (parts-alist `((level unquote level-str)
+                              (tags unquote tags-str)
                               (time unquote time-str)
                               (host unquote host-str)
                               (name unquote name-str)
@@ -114,6 +126,8 @@
 
   (make-filtered-logger #:name name
                         #:level level
+                        #:tag-filter tag-filter
+                        #:log-message-proc (make-syslog-printer #t)
                         #:log-trace-proc (make-syslog-printer 'trace)
                         #:log-debug-proc (make-syslog-printer 'debug)
                         #:log-info-proc (make-syslog-printer 'info)

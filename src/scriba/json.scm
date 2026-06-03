@@ -43,19 +43,28 @@
 
 (define* (%make-scriba-json-logger #:key name
                                    (level (default-log-level))
+                                   (tag-filter (default-tag-filter))
                                    pretty?
                                    (timestamp-format (default-time-format))
                                    (out-port (default-out-port))
                                    (flush-port? (default-flush-port?))
-                                   (layout '(level time host name message
+                                   (layout '(level tags
+                                                   time
+                                                   host
+                                                   name
+                                                   message
                                                    context)))
-  
+
   (define name-field
     (get-name-field name))
 
   (define (make-json-printer lvl)
-    (let ((level-field `((level unquote
-                                (string-upcase (symbol->string lvl)))))
+    (let ((level-field (cond
+                         ((symbol? lvl)
+                          `((level unquote
+                                   (string-upcase (symbol->string lvl)))))
+                         ((boolean? lvl)
+                          '())))
           (host-field `((host unquote
                               (gethostname)))))
       (lambda (msg . args)
@@ -64,13 +73,15 @@
                (time-field (if (memq 'time layout)
                                (get-time-field timestamp-format) #f))
                (dynamic-ctx (current-log-context))
+               (dynamic-tags (if (nil? (current-log-tags)) #f
+                                 `((tags unquote (list->vector (current-log-tags))))))
                (fragments `((level unquote level-field)
+                            (tags unquote dynamic-tags)
                             (time unquote time-field)
                             (host unquote host-field)
                             (name unquote name-field)
                             (message unquote base-field)
                             (context unquote dynamic-ctx)))
-
                (ordered-fragments (map (lambda (sym)
                                          (let ((frag (assq-ref fragments sym)))
                                            (if frag frag
@@ -84,6 +95,8 @@
 
   (make-filtered-logger #:name name
                         #:level level
+                        #:tag-filter tag-filter
+                        #:log-message-proc (make-json-printer #t)
                         #:log-trace-proc (make-json-printer 'trace)
                         #:log-debug-proc (make-json-printer 'debug)
                         #:log-info-proc (make-json-printer 'info)

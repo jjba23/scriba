@@ -21,6 +21,8 @@ and compile-time macros."
 
 A Lisp structured logging library with flexibility, performance and configuration in mind, powered by Guile Scheme.
 
+[[https://jointhefreeworld.org/static-assets/scriba/screen-2026-06-02-20-11-36.png]]
+
 If you like my work, please support me by [[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with a lot of motivation.
 
 ------------------------
@@ -36,6 +38,7 @@ Scriba is built around the core abstraction of a *logger*. It achieves high perf
 Find the complete, technical Guile Scheme  [[https://jointhefreeworld.org/api-docs/scriba/API.html][API documentation here]]
 
 Available loggers: ~console~ , ~color-console~, ~syslog~ and ~json~
+
 
 -----------------------
 
@@ -54,6 +57,9 @@ This also makes your life easier when debugging or trying to gain insights into 
 
 Scriba gives you the tooling and provides and expressive logger API that can produce beautiful, human-readable logs in development, and robust, machine-readable structured logs in production, without changing a single line of your application code.
 
+Log level is optional in Scriba, as log context can also provide log control.
+
+
 -------------------------
 
 * Quickstart
@@ -64,12 +70,14 @@ Example console logging:
 #+begin_example
 [INFO] [2026-05-24 11:23:06 CEST] Hello Scriba, 2 + 2 = 4!
 [INFO] [2026-05-24 11:23:06 CEST] [sample-1=value-1] Some log with context
+[2026-06-03 11:56:35 CEST] [#hello #world] Yes! Log with tags! [planet=earth]
 #+end_example
 
 Example JSON logging:
 #+begin_example
 {"level":"INFO","time":"2026-05-24 11:23:06 CEST","message":"Some log with context","sample-2":"value-2"}
 {"level":"WARNING","time":"2026-05-24 11:23:06 CEST","message":"some kind of warning"}
+{"tags":["performance"],"time":"2026-06-03 11:56:35 CEST","host":"joe-vdb-thinkpad","message":"Slept 0 seconds"}
 #+end_example
 
 Example syslog logging (RFC 5424):
@@ -77,6 +85,7 @@ Example syslog logging (RFC 5424):
 <14>2 2026-05-29T10:56:49+0200 joe-vdb-thinkpad 37222 - Hello Scriba!
 <14>2 2026-05-29T10:56:49+0200 joe-vdb-thinkpad 37222 - [sample-1="value-1"] Some log with context
 <12>2 2026-05-29T10:56:49+0200 joe-vdb-thinkpad 37222 - some kind of warning
+<14>2 2026-06-03T11:59:18+0200 joe-vdb-thinkpad 80672 - Not gonna sleep! [#performance #benchmark]
 #+end_example
 
 ** The Auto-Configured Logger
@@ -102,16 +111,17 @@ This is especially useful for maintaining different logging behaviors between de
 
 The auto-logger checks for ~SCRIBA_~ prefixed environment variables.
 
-| Scriba Env Var          | Description                                                     | Default                                 |
-|-------------------------+-----------------------------------------------------------------+-----------------------------------------|
+| Scriba Env Var          | Description                                                          | Default                                 |
+|-------------------------+----------------------------------------------------------------------+-----------------------------------------|
 | ~SCRIBA_LOGGER~           | The logger backend to use (~console~ , ~color-console~, ~syslog~ or ~json~). | ~console~                                 |
-| ~SCRIBA_LOG_LEVEL~        | Minimum severity level (e.g., ~debug~, ~info~, ~error~).              | ~info~                                    |
-| ~SCRIBA_JSON_PRETTY~      | Set to ~true~ or ~1~ to pretty-print JSON logs.                     | ~#f~                                      |
-| ~SCRIBA_WITH_TIMESTAMP~   | Set to ~true~ or ~1~ to include timestamps.                         | ~#t~                                      |
-| ~SCRIBA_TIMESTAMP_FORMAT~ | The ~strftime~ format string (e.g., ~"%F %T %z"~).                  | ~"%F %T %Z"~                              |
-| ~SCRIBA_OUT_PORT~         | The output port to be used (e.g. ~stdout~ or ~stderr~ or TODO ~file~) | ~(current-output-port)~                   |
-| ~SCRIBA_FLUSH_PORT~       | Set to ~true~ or ~1~ to force port flushing every log action        | ~#t~                                      |
-| ~SCRIBA_LOG_LAYOUT~       | Comma-separated list of log fields                              | ~'(level time name message context)~ |
+| ~SCRIBA_LOG_LEVEL~        | Minimum severity level (e.g., ~debug~, ~info~, ~error~).                   | ~info~                                    |
+| ~SCRIBA_JSON_PRETTY~      | Set to ~true~ or ~1~ to pretty-print JSON logs.                          | ~#f~                                      |
+| ~SCRIBA_WITH_TIMESTAMP~   | Set to ~true~ or ~1~ to include timestamps.                              | ~#t~                                      |
+| ~SCRIBA_TIMESTAMP_FORMAT~ | The ~strftime~ format string (e.g., ~"%F %T %z"~).                       | ~"%F %T %Z"~                              |
+| ~SCRIBA_OUT_PORT~         | The output port to be used (e.g. ~stdout~ or ~stderr~ or TODO ~file~)      | ~(current-output-port)~                   |
+| ~SCRIBA_FLUSH_PORT~       | Set to ~true~ or ~1~ to force port flushing every log action             | ~#t~                                      |
+| ~SCRIBA_LOG_LAYOUT~       | Comma-separated list of log fields                                   | ~'(level tags time name message context)~ |
+| ~SCRIBA_TAG_FILTER~       | Comma-separated list of tags to filter on (only log if matching)     | ~'()~                                   |
 
 Because in its implementation, the ~get-env-*~ functions act as defaults for the ~#:key~ arguments in ~%make-scriba-auto-logger~, you can easily override the environment programmatically: ~(scriba-auto-logger #:level 'trace)~.
 
@@ -135,6 +145,7 @@ See [[file:src/scriba/]] for more details.
 (let* ((s (scriba-console-logger #:name 'console-logger
                                  #:level 'info)))
   (log-info s "1 + 1 = ~a" (+ 1 1))
+  (log-message s "This message will always be logged (no level)")
   (log-error s "A critical error occurred"))
 #+end_src
 
@@ -147,6 +158,7 @@ See [[file:src/scriba/]] for more details.
                               #:level 'info
                               #:pretty? #f)))
   (log-info s "2 + 2 = ~a" (+ 2 2))
+  (log-message s "This message will always be logged (no level)")
   (log-warning s "Something suspicious happened"))
 #+end_src
 
@@ -154,7 +166,15 @@ All logger implementations share the same fundamental traits and supported funct
 
 -------------------------
 
+
 ** Log Levels
+
+For Scriba, log level is an opt-in concept. Not every system benefits from the same kind of log filtering. Other approaches like tag-based or property-based logging are powerful as well.
+
+So you can e.g. ~log-info~ or you can just do ~log-message~ if you always want to log.
+
+In the core inner workings of Scriba, we consider log level ~#t~ to mean always log, and ~#f~ to never log.
+
 A logging action is executed only if its designated level is higher than or equal to the effective level of the configured logger.
 
 #+begin_quote
@@ -164,9 +184,13 @@ A log action of level L issued to a logger having an effective level Q, is enabl
 The standard hierarchy is:
 ~trace~ < ~debug~ < ~info~ < ~success~ < ~warning~ < ~error~ < ~critical~
 
+
 -------------------------
 
 ** Log Context
+
+TODO: allow filtering on context
+
 For better observability, it is often useful to attach dynamic metadata to your log lines. Scriba handles this seamlessly via contexts:
 
 #+begin_src scheme
@@ -216,13 +240,28 @@ You can easily customize the log format and disable certain fields via layout
 #+begin_src scheme
 (let* ((s (scriba-console-logger #:name 'console-logger
                               #:level 'info
-                              #:layout '(level time host name context message))))
+                              #:layout '(level tags time host name context message))))
   (log-info s "2 + 2 = ~a" (+ 2 2)))
 #+end_src
 
 --------------
 
-* Good Logging from Day One and My Excuses
+** Log Tags and tag-based logging
+
+a.k.a. property-based logging
+
+You can also choose to use log tags to filter upon, and even go for a tag-based / property-based logging approach where your don't even need log level. Such as every log can have context, every log can also have tags.
+
+#+begin_src
+[#performance #db] [2026-06-02 21:19:24 CEST] Slept 0 seconds
+[2026-06-02 21:21:40 CEST] [INFO] [#hello #world] Yes! [planet=earth]
+#+end_src
+
+You can construct your own logger and filiter based on tags,  with ~#:tag-filter~ constructor argument, that accepts a list of symbols (the tags).
+
+-------
+
+* My Excuses & Good Logging from Day One
 
 I'm sure you've felt this, when starting a new project, setting up a /proper/ logging framework feels like an unnecessary chore.
 

@@ -22,27 +22,47 @@
   #:export (spec))
 
 (define syslog-suite
-  (suite "syslog"
-         (let* ((s (scriba-syslog-logger)))
-           (test "scriba-syslog-logger"
+  (suite "Syslog Integration Backend"
+         (let* ((syslog-logger (scriba-syslog-logger)))
+
+           (test "Baseline Plain-Text Logging"
                  (assert-no-error (lambda ()
-                                    (log-info s "Hello Scriba!"))
-                                  #:name
-                                  "default configuration and simple message")
+                                    (log-info syslog-logger "Hello Scriba!"))
+                  #:name "Emits a standard, unformatted string without errors"))
+
+           (test "Severity Handlers and String Formatting"
                  (assert-no-error (lambda ()
-                                    (log-debug s
+                                    ;; Muted level check
+                                    (log-debug syslog-logger
                                      "we should never see this since log level is not high enough!")
-                                    (log-warning s "some kind of warning")
-                                    (log-success s "yes! we made it")
-                                    (log-info s "Hello Scriba, 2 + 2 = ~a!"
+                                    ;; Active levels checks
+                                    (log-warning syslog-logger
+                                                 "some kind of warning")
+                                    ;; String interpolation check
+                                    (log-success syslog-logger "yes! ~a"
+                                                 "we made it")
+                                    (log-info syslog-logger
+                                              "Hello Scriba, 2 + 2 = ~a!"
                                               (+ 2 2)))
-                  #:name "default configuration and formatted message")
+                  #:name
+                  "Processes multiple severities and expands format arguments cleanly"))
+
+           (test "Dynamic Context and Tag Propagation"
                  (assert-no-error (lambda ()
-                                    (with-log-context `((sample-1 . value-1))
-                                                      (log-info s
-                                                       "Some log with context")))
-                                  #:name
-                                  "default configuration and logging context")))))
+                                    ;; MDC Context checks
+                                    (with-log-context '((sample-1 . value-1))
+                                                      (log-info syslog-logger
+                                                       "Some log with context"))
+                                    (with-log-context '((sample-1 . value-1))
+                                                      (log-message
+                                                       syslog-logger
+                                                       "Some log with context"))
+                                    ;; Dynamic tag filter checks
+                                    (with-log-tags '(performance benchmark)
+                                                   (log-info syslog-logger
+                                                    "Not gonna sleep!")))
+                  #:name
+                  "Safely threads structured metadata alists and active tag lists to output")))))
 
 (define (spec)
   (veritas-run syslog-suite))

@@ -22,27 +22,41 @@
   #:export (spec))
 
 (define auto-log-suite
-  (suite "Log"
-         (let* ((s (scriba-auto-logger)))
-           (test "scriba-auto-logger"
+  (suite "Adaptive Auto-Logger Routing Backend"
+         (let* ((auto-logger (scriba-auto-logger)))
+
+           (test "Baseline Routing and Dynamic Tag Binding"
                  (assert-no-error (lambda ()
-                                    (log-info s "Hello Scriba!"))
-                                  #:name
-                                  "default configuration and simple message")
+                                    (log-info auto-logger "Hello Scriba!")
+                                    (with-log-tags '(performance)
+                                                   (log-message auto-logger
+                                                    "Slept 0 seconds"))
+                                    (log-message auto-logger
+                                     "While any editor can save your files only Emacs can save your soul !"))
+                  #:name
+                  "Dispatches unformatted strings and appends active tags without execution faults"))
+
+           (test "Severity Enforcement and Argument Expansion"
                  (assert-no-error (lambda ()
-                                    (log-debug s
+                                    ;; Verify that low severity logs are safely dropped or ignored
+                                    (log-debug auto-logger
                                      "we should never see this since log level is not high enough!")
-                                    (log-warning s "some kind of warning")
-                                    (log-success s "yes! we made it")
-                                    (log-info s "Hello Scriba, 2 + 2 = ~a!"
+                                    (log-warning auto-logger
+                                                 "some kind of warning")
+                                    (log-success auto-logger "yes! we made it")
+                                    (log-info auto-logger
+                                              "Hello Scriba, 2 + 2 = ~a!"
                                               (+ 2 2)))
-                  #:name "default configuration and formatted message")
+                  #:name
+                  "Intercepts low-priority severities and cleanly expands layout format arguments"))
+
+           (test "Context Metadata Mapping"
                  (assert-no-error (lambda ()
                                     (with-log-context `((sample-1 . value-1))
-                                                      (log-info s
+                                                      (log-info auto-logger
                                                        "Some log with context")))
-                                  #:name
-                                  "default configuration and logging context")))))
+                  #:name
+                  "Safely threads structured Mapped Diagnostic Context (MDC) scopes onto active pipelines")))))
 
 (define (spec)
   (veritas-run auto-log-suite))

@@ -69,6 +69,15 @@
         (string-append ansi-dim
                        (string-join mdc " ") ansi-reset))))
 
+(define (format-tags tags)
+  "Converts an list of tags into a bracketed string layout."
+  (let ((mdc (map (lambda (x)
+                    (format #f "#~a" x)) tags)))
+    (if (nil? tags) #f
+        (string-append ansi-dim
+                       (format #f "[~a]"
+                               (string-join mdc " ")) ansi-reset))))
+
 (define (format-name name)
   "Returns the formatted logger name, or an empty string."
   (if name
@@ -76,6 +85,7 @@
 
 (define* (%make-scriba-color-console-logger #:key name
                                             (level (default-log-level))
+                                            (tag-filter (default-tag-filter))
                                             (timestamp-format (default-time-format))
                                             (out-port (default-out-port))
                                             (flush-port? (default-flush-port?))
@@ -85,18 +95,25 @@
 
   (define (make-color-printer lvl)
     (let* ((color (level->color lvl))
-           (level-str (format #f "~a[~a]~a" color
-                              (string-upcase (symbol->string lvl)) ansi-reset))
+           (level-str (cond
+                        ((symbol? lvl)
+                         (format #f "~a[~a]~a" color
+                                 (string-upcase (symbol->string lvl))
+                                 ansi-reset))
+                        ((boolean? lvl)
+                         #f)))
            (host-str (gethostname)))
       (lambda (msg . args)
         (let* ((time-str (if (memq 'time layout)
                              (format-timestamp timestamp-format) #f))
                (ctx-str (format-context (current-log-context)))
+               (tags-str (format-tags (current-log-tags)))
                (raw-user-msg (apply format #f msg args))
 
                (user-msg (string-append color raw-user-msg ansi-reset))
 
                (parts-alist `((level unquote level-str)
+                              (tags unquote tags-str)
                               (time unquote time-str)
                               (host unquote host-str)
                               (name unquote name-str)
@@ -108,7 +125,7 @@
                                             layout))
 
                (final-output (string-join ordered-strings " ")))
-          
+
           (format out-port "\n~a" final-output)
 
           (when flush-port?
@@ -116,6 +133,8 @@
 
   (make-filtered-logger #:name name
                         #:level level
+                        #:tag-filter tag-filter
+                        #:log-message-proc (make-color-printer #t)
                         #:log-trace-proc (make-color-printer 'trace)
                         #:log-debug-proc (make-color-printer 'debug)
                         #:log-info-proc (make-color-printer 'info)
