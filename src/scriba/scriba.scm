@@ -28,8 +28,7 @@
 ;; unnecessary runtime level checks during iterative logging calls.
 
 ;; Thread/fiber-safe contextual tracing data can be appended dynamically using
-;; the `with-log-context` macro. This wraps execution scopes and links key-value
-;; pairs cleanly to downstream logging outputs without manual context drilling.
+;; the `with-log-context` and `with-log-tags` macros.
 
 ;;; Code:
 
@@ -60,7 +59,9 @@
                                  with-log-tags
                                  current-log-context
                                  current-log-tags
-                                 memoize-logger))
+                                 memoize-logger
+                                 maybe-log-proc
+                                 tag-match?))
 
 (define-syntax define-record-with-kw
   (syntax-rules ()
@@ -88,9 +89,56 @@
                        (log-error-proc logger-log-error)
                        (log-critical-proc logger-log-critical))
 
-(define log-unit
-  (lambda (msg . args)
-    (values)))
+(define (log-unit msg . args)
+  "A zero-overhead, no-op logging procedure.
+
+Accepts a format string MSG and optional ARGS to satisfy standard logging
+arity requirements, then immediately discards them and returns no values.
+Used across the framework as a terminal sink for disabled log statements."
+  (values))
+
+(define (tag-match? filter-tags current-tags)
+  "Determine if the current execution context satisfies the logger's tag filter.
+
+Returns #t if FILTER-TAGS is empty (acting as a wildcard that permits all logs),
+or if there is an intersection of at least one element between FILTER-TAGS and
+CURRENT-TAGS. Returns #f if a non-empty filter shares no tags with the current tags."
+  (or (null? filter-tags)
+      (let loop
+        ((tags current-tags))
+        (cond
+          ((null? tags)
+           #f)
+          ((memq (car tags) filter-tags)
+           #t)
+          (else (loop (cdr tags)))))))
+
+(define* (maybe-log-proc #:key level target-level tag-filter proc)
+  "Conditionally evaluate and compile a logging procedure based on severity and tags.
+
+Compares TARGET-LEVEL against the logger's configured LEVEL. If the level is
+explicitly disabled or falls below the required threshold, this returns the
+`log-unit` no-op procedure directly, avoiding downstream runtime overhead.
+
+If the severity level is active, it returns a higher-order wrapper closure.
+When invoked, this closure inspects the fluid context via `(current-log-tags)`.
+If the tags match TAG-FILTER, it delegates formatting to PROC; otherwise, it
+safely routes execution to `log-unit`."
+  (let ((level-allowed? (cond
+                          ((eq? target-level #t)
+                           #t)
+                          ((eq? target-level #f)
+                           #f)
+                          ((is-in-log-level? target-level level)
+                           #t)
+                          (else #f))))
+    (if level-allowed?
+        (if (null? tag-filter) proc
+            (lambda (msg . args)
+              (if (tag-match? tag-filter
+                              (current-log-tags))
+                  (apply proc msg args)
+                  (apply log-unit msg args)))) log-unit)))
 
 (define* (make-filtered-logger #:key name
                                level
@@ -103,28 +151,42 @@
                                log-warning-proc
                                log-error-proc
                                log-critical-proc)
-  "Creates a logger, mapping excluded log levels to log-unit."
-  (define (maybe-proc target-level proc)
-    (cond
-      ((eq? target-level #t)
-       proc)
-      ((eq? target-level #f)
-       log-unit)
-      ((is-in-log-level? target-level level)
-       proc)
-      (else log-unit)))
-
+  "Creates a logger, mapping excluded log levels and non-matching tags to log-unit."
   (mk-logger #:name-val name
              #:level-val level
              #:tag-filter-val tag-filter
-             #:log-message-proc (maybe-proc #t log-message-proc)
-             #:log-trace-proc (maybe-proc 'trace log-trace-proc)
-             #:log-debug-proc (maybe-proc 'debug log-debug-proc)
-             #:log-info-proc (maybe-proc 'info log-info-proc)
-             #:log-success-proc (maybe-proc 'success log-success-proc)
-             #:log-warning-proc (maybe-proc 'warning log-warning-proc)
-             #:log-error-proc (maybe-proc 'error log-error-proc)
-             #:log-critical-proc (maybe-proc 'critical log-critical-proc)))
+             #:log-message-proc (maybe-log-proc #:level level
+                                                #:target-level #t
+                                                #:tag-filter tag-filter
+                                                #:proc log-message-proc)
+             #:log-trace-proc (maybe-log-proc #:level level
+                                              #:target-level 'trace
+                                              #:tag-filter tag-filter
+                                              #:proc log-trace-proc)
+             #:log-debug-proc (maybe-log-proc #:level level
+                                              #:target-level 'debug
+                                              #:tag-filter tag-filter
+                                              #:proc log-debug-proc)
+             #:log-info-proc (maybe-log-proc #:level level
+                                             #:target-level 'info
+                                             #:tag-filter tag-filter
+                                             #:proc log-info-proc)
+             #:log-success-proc (maybe-log-proc #:level level
+                                                #:target-level 'success
+                                                #:tag-filter tag-filter
+                                                #:proc log-success-proc)
+             #:log-warning-proc (maybe-log-proc #:level level
+                                                #:target-level 'warning
+                                                #:tag-filter tag-filter
+                                                #:proc log-warning-proc)
+             #:log-error-proc (maybe-log-proc #:level level
+                                              #:target-level 'error
+                                              #:tag-filter tag-filter
+                                              #:proc log-error-proc)
+             #:log-critical-proc (maybe-log-proc #:level level
+                                                 #:target-level 'critical
+                                                 #:tag-filter tag-filter
+                                                 #:proc log-critical-proc)))
 
 (define-syntax-rule (define-logger-method method-name accessor docstring)
   "A helper macro to generate boilerplate domain logging functions.
@@ -137,8 +199,7 @@ and applies it to the message and arguments.
 The provided DOCSTRING is automatically injected into the generated procedure."
   (define (method-name logger message . args)
     docstring
-    (apply (accessor logger)
-           (cons message args))))
+    (apply (accessor logger) message args)))
 
 (define-logger-method log-message logger-log-message "Emits a log.")
 
@@ -233,12 +294,14 @@ in memory, preventing redundant instantiations and reducing overhead."
 
 (define-syntax-rule (with-log-context ctx body ...)
   "Dynamically append CTX (an alist) to the current log context for the duration of BODY."
-  (parameterize ((current-log-context (append (current-log-context) ctx)))
+  (parameterize ((current-log-context (append ctx
+                                              (current-log-context))))
     body ...))
 
 (define-syntax-rule (with-log-tags tags body ...)
   "Dynamically append TAGS (a list) to the current log tags for the duration of BODY."
-  (parameterize ((current-log-tags (append (current-log-tags) tags)))
+  (parameterize ((current-log-tags (append tags
+                                           (current-log-tags))))
     body ...))
 
 (define human-time-format

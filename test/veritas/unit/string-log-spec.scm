@@ -76,8 +76,7 @@
                                     (let ((r (get-output-string string-port)))
                                       (unless (equal? "" r)
                                         (throw 'unexpected-log-message r))))
-                                  #:name
-                                  "default configuration and logging context")))))
+                                  #:name "filters out irrelevant tags")))))
 
 (define (spec)
   (veritas-run string-log-suite tag-log-suite))
