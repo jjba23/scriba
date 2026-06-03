@@ -55,6 +55,7 @@
                                  default-out-port
                                  default-flush-port?
                                  default-tag-filter
+                                 default-context-filter
                                  with-log-context
                                  with-log-tags
                                  current-log-context
@@ -79,6 +80,7 @@
                        mk-logger
                        (name-val logger-name)
                        (level-val logger-level)
+                       (context-filter-val logger-context-filter)
                        (tag-filter-val logger-tag-filter)
                        (log-message-proc logger-log-message)
                        (log-trace-proc logger-log-trace)
@@ -113,35 +115,61 @@ CURRENT-TAGS. Returns #f if a non-empty filter shares no tags with the current t
            #t)
           (else (loop (cdr tags)))))))
 
-(define* (maybe-log-proc #:key level target-level tag-filter proc)
-  "Conditionally evaluate and compile a logging procedure based on severity and tags.
+(define (context-match? filter-context current-context)
+  "Determine if the current execution context satisfies the logger's context filter alist.
+
+Returns #t if FILTER-CONTEXT is empty (acting as a wildcard that permits all logs),
+or if at least one key-value pair specified in FILTER-CONTEXT matches exactly within
+CURRENT-CONTEXT. Returns #f if no matching pairs are found."
+  (or (null? filter-context)
+      (let loop
+        ((ctx filter-context))
+        (cond
+          ((null? ctx)
+           #f)
+          ((let ((found (assoc (caar ctx) current-context)))
+             (and found
+                  (equal? (cdar ctx)
+                          (cdr found))))
+           #t)
+          (else (loop (cdr ctx)))))))
+
+(define* (maybe-log-proc #:key level
+                         target-level
+                         context-filter
+                         tag-filter
+                         proc)
+  "Conditionally evaluate and compile a logging procedure based on severity, tags, and context.
 
 Compares TARGET-LEVEL against the logger's configured LEVEL. If the level is
 explicitly disabled or falls below the required threshold, this returns the
 `log-unit` no-op procedure directly, avoiding downstream runtime overhead.
 
 If the severity level is active, it returns a higher-order wrapper closure.
-When invoked, this closure inspects the fluid context via `(current-log-tags)`.
-If the tags match TAG-FILTER, it delegates formatting to PROC; otherwise, it
-safely routes execution to `log-unit`."
+When invoked, this closure inspects fluid parameters via `(current-log-tags)` and
+`(current-log-context)`. If both constraints match their filters, it delegates formatting
+to PROC; otherwise, it safely routes execution to the no-op `log-unit`."
   (let ((level-allowed? (cond
                           ((eq? target-level #t)
                            #t)
-                          ((eq? target-level #f)
-                           #f)
                           ((is-in-log-level? target-level level)
                            #t)
-                          (else #f))))
+                          (else #f)))
+        (no-filters? (and (null? tag-filter)
+                          (null? context-filter))))
     (if level-allowed?
-        (if (null? tag-filter) proc
+        (if no-filters? proc
             (lambda (msg . args)
-              (if (tag-match? tag-filter
-                              (current-log-tags))
+              (if (and (tag-match? tag-filter
+                                   (current-log-tags))
+                       (context-match? context-filter
+                                       (current-log-context)))
                   (apply proc msg args)
                   (apply log-unit msg args)))) log-unit)))
 
 (define* (make-filtered-logger #:key name
                                level
+                               context-filter
                                tag-filter
                                log-message-proc
                                log-trace-proc
@@ -154,37 +182,50 @@ safely routes execution to `log-unit`."
   "Creates a logger, mapping excluded log levels and non-matching tags to log-unit."
   (mk-logger #:name-val name
              #:level-val level
+             #:context-filter-val context-filter
              #:tag-filter-val tag-filter
              #:log-message-proc (maybe-log-proc #:level level
                                                 #:target-level #t
+                                                #:context-filter
+                                                context-filter
                                                 #:tag-filter tag-filter
                                                 #:proc log-message-proc)
              #:log-trace-proc (maybe-log-proc #:level level
                                               #:target-level 'trace
+                                              #:context-filter context-filter
                                               #:tag-filter tag-filter
                                               #:proc log-trace-proc)
              #:log-debug-proc (maybe-log-proc #:level level
                                               #:target-level 'debug
+                                              #:context-filter context-filter
                                               #:tag-filter tag-filter
                                               #:proc log-debug-proc)
              #:log-info-proc (maybe-log-proc #:level level
                                              #:target-level 'info
+                                             #:context-filter context-filter
                                              #:tag-filter tag-filter
                                              #:proc log-info-proc)
              #:log-success-proc (maybe-log-proc #:level level
                                                 #:target-level 'success
+                                                #:context-filter
+                                                context-filter
                                                 #:tag-filter tag-filter
                                                 #:proc log-success-proc)
              #:log-warning-proc (maybe-log-proc #:level level
                                                 #:target-level 'warning
+                                                #:context-filter
+                                                context-filter
                                                 #:tag-filter tag-filter
                                                 #:proc log-warning-proc)
              #:log-error-proc (maybe-log-proc #:level level
                                               #:target-level 'error
+                                              #:context-filter context-filter
                                               #:tag-filter tag-filter
                                               #:proc log-error-proc)
              #:log-critical-proc (maybe-log-proc #:level level
                                                  #:target-level 'critical
+                                                 #:context-filter
+                                                 context-filter
                                                  #:tag-filter tag-filter
                                                  #:proc log-critical-proc)))
 
@@ -317,6 +358,9 @@ in memory, preventing redundant instantiations and reducing overhead."
   (make-parameter 'info))
 
 (define default-tag-filter
+  (make-parameter '()))
+
+(define default-context-filter
   (make-parameter '()))
 
 (define default-time-format

@@ -121,7 +121,8 @@ The auto-logger checks for ~SCRIBA_~ prefixed environment variables.
 | ~SCRIBA_OUT_PORT~         | The output port to be used (e.g. ~stdout~ or ~stderr~ or TODO ~file~)      | ~(current-output-port)~                   |
 | ~SCRIBA_FLUSH_PORT~       | Set to ~true~ or ~1~ to force port flushing every log action             | ~#t~                                      |
 | ~SCRIBA_LOG_LAYOUT~       | Comma-separated list of log fields                                   | ~'(level tags time name message context)~ |
-| ~SCRIBA_TAG_FILTER~       | Comma-separated list of tags to filter on (only log if matching)     | ~'()~                                   |
+| ~SCRIBA_TAG_FILTER~       | Comma-separated list of tags to filter on (only log if matching)     | ~'()~                                     |
+| ~SCRIBA_CONTEXT_FILTER~   | Comma-separated list of semi-colon separated key value pairs         | ~'()~                                   |
 
 Because in its implementation, the ~get-env-*~ functions act as defaults for the ~#:key~ arguments in ~%make-scriba-auto-logger~, you can easily override the environment programmatically: ~(scriba-auto-logger #:level 'trace)~.
 
@@ -221,7 +222,17 @@ For better observability, it is often useful to attach dynamic metadata to your 
   (do-some-work a b c))
 #+end_src
 
-**** TODO: implement context-based filtering but keep it just like tags that it's no-cost when opting-out
+You can construct your own logger and filter based on context,  with ~#:context-filter~ constructor argument, that accepts an alist (the context)
+
+#+begin_src scheme
+(let* ((s (scriba-console-logger #:name 'console-logger
+                              #:level 'info
+                              ;; filter on context
+                              #:context-filter `((some-key . "some-value")))))
+  (with-log-context `((some-key . "some-value"))
+                 (log-info s "2 + 2 = ~a" (+ 2 2))))
+#+end_src
+
 
 -------------------------
 
@@ -290,7 +301,7 @@ Tags can be added (and nested) just like context, with ~with-log-tags~ macro.
                               ;; filter on tags
                               #:tag-filter '(benchmark db performance))))
   (with-log-tags '(benchmark db performance)
-                 (log-info s "2 + 2 = ~a" (+ 2 2)))
+                 (log-info s "2 + 2 = ~a" (+ 2 2))))
 #+end_src
 
 -------

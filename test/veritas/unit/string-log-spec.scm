@@ -92,5 +92,48 @@
                   #:name
                   "Intercepts unlisted tag streams and silently drops them via log-unit redirection")))))
 
+(define context-log-suite
+  (suite "Dynamic Context Filtering Pipeline"
+         ;; Matching contexts
+         (let* ((string-port (open-output-string))
+                (logger (scriba-console-logger #:out-port string-port
+                                               #:context-filter '((type . performance))
+                                               #:layout '(level name message
+                                                                context))))
+           
+           (test "Matching Context Interception"
+                 (assert-no-error (lambda ()
+                                    (with-log-context '((type . performance))
+                                                      (log-message logger
+                                                       "Some log without level but with context"))
+                                    (let ((result (get-output-string
+                                                   string-port)))
+                                      (unless (string-prefix-ci?
+                                               "
+Some log without level but with context [type=performance]"
+                                               result)
+                                        (throw 'unexpected-log-message result))))
+                  #:name
+                  "Passes execution and prepends active contexts when context matches the filter hash")))
+
+         ;; Non-matching contexts
+         (let* ((string-port (open-output-string))
+                (logger (scriba-console-logger #:out-port string-port
+                                               #:context-filter '((type . performance))
+                                               #:layout '(level name message
+                                                                context))))
+           
+           (test "Non-Matching Context Suppression"
+                 (assert-no-error (lambda ()
+                                    (with-log-context '((irrelevant . context))
+                                                      (log-message logger
+                                                       "Some log without level but with irrelevant contexts"))
+                                    (let ((result (get-output-string
+                                                   string-port)))
+                                      (unless (equal? "" result)
+                                        (throw 'unexpected-log-message result))))
+                  #:name
+                  "Intercepts unlisted context streams and silently drops them via log-unit redirection")))))
+
 (define (spec)
-  (veritas-run string-log-suite tag-log-suite))
+  (veritas-run string-log-suite tag-log-suite context-log-suite))

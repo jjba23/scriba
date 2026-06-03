@@ -79,6 +79,7 @@
 
 (define* (%make-scriba-syslog-logger #:key name
                                      (level (default-log-level))
+                                     (context-filter (default-context-filter))
                                      (tag-filter (default-tag-filter))
                                      (timestamp-format iso-8601-time-format)
                                      (out-port (default-out-port))
@@ -126,6 +127,7 @@
 
   (make-filtered-logger #:name name
                         #:level level
+                        #:context-filter context-filter
                         #:tag-filter tag-filter
                         #:log-message-proc (make-syslog-printer #t)
                         #:log-trace-proc (make-syslog-printer 'trace)

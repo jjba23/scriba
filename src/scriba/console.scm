@@ -59,6 +59,7 @@
 
 (define* (%make-scriba-console-logger #:key name
                                       (level (default-log-level))
+                                      (context-filter (default-context-filter))
                                       (tag-filter (default-tag-filter))
                                       (timestamp-format (default-time-format))
                                       (out-port (default-out-port))
@@ -100,6 +101,7 @@
 
   (make-filtered-logger #:name name
                         #:level level
+                        #:context-filter context-filter
                         #:tag-filter tag-filter
                         #:log-message-proc (make-console-printer #t)
                         #:log-trace-proc (make-console-printer 'trace)
