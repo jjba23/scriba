@@ -70,12 +70,14 @@ Example console logging:
 #+begin_example
 [INFO] [2026-05-24 11:23:06 CEST] Hello Scriba, 2 + 2 = 4!
 [INFO] [2026-05-24 11:23:06 CEST] [sample-1=value-1] Some log with context
+[2026-06-03 11:56:35 CEST] [#hello #world] Yes! Log with tags! [planet=earth]
 #+end_example
 
 Example JSON logging:
 #+begin_example
 {"level":"INFO","time":"2026-05-24 11:23:06 CEST","message":"Some log with context","sample-2":"value-2"}
 {"level":"WARNING","time":"2026-05-24 11:23:06 CEST","message":"some kind of warning"}
+{"tags":["performance"],"time":"2026-06-03 11:56:35 CEST","host":"joe-vdb-thinkpad","message":"Slept 0 seconds"}
 #+end_example
 
 Example syslog logging (RFC 5424):
@@ -83,6 +85,7 @@ Example syslog logging (RFC 5424):
 <14>2 2026-05-29T10:56:49+0200 joe-vdb-thinkpad 37222 - Hello Scriba!
 <14>2 2026-05-29T10:56:49+0200 joe-vdb-thinkpad 37222 - [sample-1="value-1"] Some log with context
 <12>2 2026-05-29T10:56:49+0200 joe-vdb-thinkpad 37222 - some kind of warning
+<14>2 2026-06-03T11:59:18+0200 joe-vdb-thinkpad 80672 - Not gonna sleep! [#performance #benchmark]
 #+end_example
 
 ** The Auto-Configured Logger
@@ -252,6 +255,8 @@ You can also choose to use log tags to filter upon, and even go for a tag-based 
 [SUCCESS] [2026-06-02 21:19:24 CEST] yes! we made it
 [2026-06-02 21:21:40 CEST] [INFO] [#hello #world] Yes! [planet=earth]
 #+end_src
+
+You can construct your own logger and filiter based on tags,  with ~#:tag-filter~ constructor argument, that accepts a list of symbols (the tags).
 
 -------
 
