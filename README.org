@@ -246,13 +246,14 @@ You can easily customize the log format and disable certain fields via layout
 
 --------------
 
-** Log tags
+** Log Tags and tag-based logging
+
+a.k.a. property-based logging
 
 You can also choose to use log tags to filter upon, and even go for a tag-based / property-based logging approach where your don't even need log level. Such as every log can have context, every log can also have tags.
 
 #+begin_src
 [#performance #db] [2026-06-02 21:19:24 CEST] Slept 0 seconds
-[SUCCESS] [2026-06-02 21:19:24 CEST] yes! we made it
 [2026-06-02 21:21:40 CEST] [INFO] [#hello #world] Yes! [planet=earth]
 #+end_src
 
@@ -260,7 +261,7 @@ You can construct your own logger and filiter based on tags,  with ~#:tag-filter
 
 -------
 
-* Good Logging from Day One and My Excuses
+* My Excuses & Good Logging from Day One
 
 I'm sure you've felt this, when starting a new project, setting up a /proper/ logging framework feels like an unnecessary chore.
 
