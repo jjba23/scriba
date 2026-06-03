@@ -280,7 +280,7 @@ You can also choose to use log tags to filter upon, and even go for a tag-based 
 [2026-06-02 21:21:40 CEST] [INFO] [#hello #world] Yes! [planet=earth]
 #+end_src
 
-You can construct your own logger and filiter based on tags,  with ~#:tag-filter~ constructor argument, that accepts a list of symbols (the tags) .
+You can construct your own logger and filter based on tags,  with ~#:tag-filter~ constructor argument, that accepts a list of symbols (the tags) .
 
 Tags can be added (and nested) just like context, with ~with-log-tags~ macro.
 
@@ -303,7 +303,7 @@ We reach for ~(display "\ngot here")~ or ~format~ because it is frictionless.
 
 But as the codebase grows, those scattered print statements become a noisy, unsearchable liability.
 
-With Scriba, you have less excuses to procastinate:
+With Scriba, you have less excuses to procrastinate:
 
 - *"It is too much boilerplate to set up."*
   With the ~scriba-auto-logger~, it takes exactly two lines of code to get a fully functioning, formatted logger. No complex configuration files or initialization rituals required.
