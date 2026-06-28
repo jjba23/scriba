@@ -52,10 +52,10 @@
   (delete-file-recursively "doc")
   (time-machine-manifest-shell (list (~ "documenta api ./src/~a && "
                                         project-name)
-                                     (~ "texi2any -v --html --css-ref=~a"
+                                     (~ "texi2any -v --html --css-ref=~a -o index_html"
                                         api-docs-css-url)
                                      "./doc/api/index.texi"))
-  (mv "./index" "./doc/api-dist"))
+  (mv "./index_html" "./doc/api-dist"))
 
 (define (deploy)
   "Generate documentation for the project and publish to web directory."
