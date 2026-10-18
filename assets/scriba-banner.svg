@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 340" width="1200" height="340" role="img" aria-labelledby="title desc">
+  <title id="title">scriba — structured logging for GNU Guile</title>
+  <desc id="desc">A dark banner with the scriba wordmark, the tagline "structured logging for GNU Guile", and three sample log lines: a plain console line, a line with context, and a JSON line.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d1117"/>
+      <stop offset="1" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="wordmark" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7ee787"/>
+      <stop offset="1" stop-color="#79c0ff"/>
+    </linearGradient>
+    <style>
+      .mono { font-family: ui-monospace, SFMono-Regular, "DejaVu Sans Mono", Menlo, Consolas, monospace; }
+      .dim   { fill: #7d8590; }
+      .text  { fill: #e6edf3; }
+      .info  { fill: #7ee787; }
+      .warn  { fill: #e3b341; }
+      .json  { fill: #79c0ff; }
+      .key   { fill: #d2a8ff; }
+      .str   { fill: #a5d6ff; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="340" rx="18" fill="url(#bg)"/>
+  <rect x="1" y="1" width="1198" height="338" rx="17" fill="none" stroke="#30363d" stroke-width="2"/>
+
+  <circle cx="44" cy="42" r="7" fill="#ff7b72"/>
+  <circle cx="70" cy="42" r="7" fill="#d29922"/>
+  <circle cx="96" cy="42" r="7" fill="#3fb950"/>
+  <text x="1164" y="50" text-anchor="end" class="mono dim" font-size="18">scriba / guile</text>
+
+  <text x="60" y="140" class="mono" font-size="74" font-weight="700" fill="url(#wordmark)">scriba</text>
+  <text x="62" y="180" class="mono dim" font-size="22">structured logging for GNU Guile</text>
+
+  <line x1="60" y1="214" x2="1140" y2="214" stroke="#30363d" stroke-width="1"/>
+
+  <g class="mono" font-size="19">
+    <text x="60" y="252">
+      <tspan class="info">[INFO]</tspan><tspan class="dim"> [2026-06-03 11:56:35 CEST] </tspan><tspan class="text">Hello Scriba, 2 + 2 = 4!</tspan>
+    </text>
+    <text x="60" y="282">
+      <tspan class="warn">[WARNING]</tspan><tspan class="dim"> [2026-06-03 11:56:35 CEST] </tspan><tspan class="text">Disk almost full</tspan><tspan class="dim"> </tspan><tspan class="json">[disk=/dev/sda1]</tspan>
+    </text>
+    <text x="60" y="312" aria-hidden="true">
+      <tspan class="dim">{</tspan><tspan class="key">"level"</tspan><tspan class="dim">:</tspan><tspan class="str">"INFO"</tspan><tspan class="dim">, </tspan><tspan class="key">"request-id"</tspan><tspan class="dim">:</tspan><tspan class="str">"req-1234"</tspan><tspan class="dim">, </tspan><tspan class="key">"message"</tspan><tspan class="dim">:</tspan><tspan class="str">"Hello Scriba!"</tspan><tspan class="dim">}</tspan>
+    </text>
+  </g>
+</svg>

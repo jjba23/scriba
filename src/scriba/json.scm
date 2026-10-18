@@ -26,14 +26,18 @@
 
 (define-module (scriba json)
   #:use-module (json)
+  #:use-module ((scriba layout)
+                #:select (format-plain-time))
   #:use-module (scriba scriba)
   #:export (scriba-json-logger default-json-pretty? %make-scriba-json-logger))
+
+(define default-json-pretty?
+  (make-parameter #f))
 
 (define (get-time-field format-string)
   "Returns a timestamp alist entry."
   `((time unquote
-          (strftime format-string
-                    (localtime (current-time))))))
+          (format-plain-time format-string))))
 
 (define (get-name-field name)
   "Returns a name alist entry, or an empty list if unnamed."
@@ -45,16 +49,20 @@
                                    (level (default-log-level))
                                    (context-filter (default-context-filter))
                                    (tag-filter (default-tag-filter))
-                                   pretty?
+                                   (pretty? (default-json-pretty?))
                                    (timestamp-format (default-time-format))
                                    (out-port (default-out-port))
                                    (flush-port? (default-flush-port?))
+                                   (line-ending (default-line-ending))
                                    (layout '(level tags
                                                    time
                                                    host
                                                    name
                                                    message
                                                    context)))
+
+  (validate-log-layout layout
+                       #:fields json-layout-fields)
 
   (define name-field
     (get-name-field name))
@@ -69,13 +77,14 @@
           (host-field `((host unquote
                               (gethostname)))))
       (lambda (msg . args)
-        (let* ((user-msg (apply format #f msg args))
+        (let* ((user-msg (format-log-message msg args))
                (base-field `((message unquote user-msg)))
                (time-field (if (memq 'time layout)
                                (get-time-field timestamp-format) #f))
                (dynamic-ctx (current-log-context))
-               (dynamic-tags (if (nil? (current-log-tags)) #f
-                                 `((tags unquote (list->vector (current-log-tags))))))
+               (dynamic-tags (if (null? (current-log-tags)) #f
+                                 `((tags unquote
+                                         (list->vector (current-log-tags))))))
                (fragments `((level unquote level-field)
                             (tags unquote dynamic-tags)
                             (time unquote time-field)
@@ -90,7 +99,7 @@
                (fields (apply append ordered-fragments))
                (serialized-log (scm->json-string fields
                                                  #:pretty pretty?)))
-          (format out-port "\n~a" serialized-log)
+          (write-log-line out-port serialized-log line-ending)
           (when flush-port?
             (force-output out-port))))))
 
@@ -108,7 +117,12 @@
                         #:log-critical-proc (make-json-printer 'critical)))
 
 (define scriba-json-logger
-  (memoize-logger %make-scriba-json-logger))
-
-(define default-json-pretty?
-  (make-parameter #f))
+  (memoize-logger %make-scriba-json-logger
+                  (#:level default-log-level)
+                  (#:context-filter default-context-filter)
+                  (#:tag-filter default-tag-filter)
+                  (#:pretty? default-json-pretty?)
+                  (#:timestamp-format default-time-format)
+                  (#:out-port default-out-port)
+                  (#:flush-port? default-flush-port?)
+                  (#:line-ending default-line-ending)))

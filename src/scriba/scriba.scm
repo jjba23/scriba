@@ -49,6 +49,12 @@
                                  human-time-format
                                  log-friendly-time-format
                                  is-in-log-level?
+                                 valid-log-level?
+                                 valid-log-field?
+                                 validate-log-layout
+                                 text-layout-fields
+                                 json-layout-fields
+                                 syslog-layout-fields
                                  default-time-format
                                  default-log-level
                                  default-logger
@@ -57,6 +63,9 @@
                                  default-flush-port?
                                  default-tag-filter
                                  default-context-filter
+                                 default-line-ending
+                                 write-log-line
+                                 format-log-message
                                  with-log-context
                                  with-log-tags
                                  current-log-context
@@ -99,6 +108,41 @@ Accepts a format string MSG and optional ARGS to satisfy standard logging
 arity requirements, then immediately discards them and returns no values.
 Used across the framework as a terminal sink for disabled log statements."
   (values))
+
+(define (write-log-line port line line-ending)
+  "Frames LINE with a newline and writes it to PORT.
+
+LINE-ENDING decides where that newline goes: 'trailing (the default) appends
+it, so log lines behave like ordinary text lines and the stream never starts
+with a blank line. 'leading prepends it, which is handy when the log stream is
+interleaved with prompts or other output that lacks a final newline.
+
+`display' and `newline' are used instead of `format' because a format call
+costs an order of magnitude more than the rest of a short log line."
+  (case line-ending
+    ((trailing)
+     (display line port)
+     (newline port))
+    ((leading)
+     (newline port)
+     (display line port))
+    (else (error "Scriba: invalid line-ending, expected 'trailing or 'leading"
+           line-ending))))
+
+(define (format-log-message msg args)
+  "Applies MSG as a format string to ARGS, skipping the formatter for no ARGS.
+
+Most log statements carry a literal message and no arguments, and Guile's
+formatter is comparatively expensive, so a string is passed through untouched
+when there is nothing to substitute. Messages with arguments are formatted as
+usual. A side effect is that a lone message containing `~' is now literal
+instead of being interpreted as a (likely invalid) format directive."
+  (cond
+    ((not (null? args))
+     (apply format #f msg args))
+    ((string? msg)
+     msg)
+    (else (format #f "~a" msg))))
 
 (define (tag-match? filter-tags current-tags)
   "Determine if the current execution context satisfies the logger's tag filter.
@@ -179,6 +223,16 @@ When invoked, this closure inspects fluid parameters via `(current-log-tags)` an
 `(current-log-context)`. If both constraints match their filters, it delegates formatting
 to PROC; otherwise, it safely routes execution to the no-op `log-unit`."
   (let ((level-allowed? (cond
+                          ;; #f is the explicit "never log" setting, so it
+                          ;; wins even over level-less log-message calls.
+                          ((eq? level #f)
+                           #f)
+                          ;; #t is the explicit "always log" setting, so every
+                          ;; severity passes, not just log-message.
+                          ((eq? level #t)
+                           #t)
+                          ;; log-message carries no severity and is otherwise
+                          ;; only subject to the tag/context filters.
                           ((eq? target-level #t)
                            #t)
                           ((is-in-log-level? target-level level)
@@ -209,6 +263,7 @@ to PROC; otherwise, it safely routes execution to the no-op `log-unit`."
                                log-error-proc
                                log-critical-proc)
   "Creates a logger, mapping excluded log levels and non-matching tags to log-unit."
+  (validate-log-level level)
   (mk-logger #:name-val name
              #:level-val level
              #:context-filter-val context-filter
@@ -337,24 +392,121 @@ MESSAGE is a format string applied to the optional ARGS.")
          (lambda (tail)
            (if (memq a tail) #t #f))))
 
-(define-syntax-rule (memoize-logger factory-proc)
+(define (valid-log-level? level)
+  "Is LEVEL a log level that Scriba understands?
+
+#t means \"always log\", #f means \"never log\", and every symbol in
+`log-levels` is a real severity."
+  (or (boolean? level)
+      (and (memq level log-levels) #t)))
+
+(define (validate-log-level level)
+  "Raise a descriptive error when LEVEL is not a usable log level.
+
+Silently muting every log statement because of a typo (e.g. 'verbose) is a
+great way to lose observability, so logger construction fails loudly instead."
+  (unless (valid-log-level? level)
+    (scm-error 'scriba-invalid-log-level
+               'make-filtered-logger
+               (format #f "Invalid log level ~a; expected #t, #f or one of ~a"
+                       level log-levels)
+               '() #f)) level)
+
+(define text-layout-fields
+  '(level tags
+          time
+          host
+          name
+          context
+          message))
+
+(define json-layout-fields
+  '(level tags
+          time
+          host
+          name
+          message
+          context))
+
+(define syslog-layout-fields
+  '(level tags
+          time
+          host
+          name
+          process-id
+          message-id
+          context
+          message))
+
+(define log-field-names
+  (delete-duplicates (append text-layout-fields json-layout-fields
+                             syslog-layout-fields)))
+
+(define (valid-log-field? field)
+  "Is FIELD something a logger knows how to render?"
+  (and (memq field log-field-names) #t))
+
+(define* (validate-log-layout layout
+                              #:key (fields text-layout-fields))
+  "Raise a descriptive error when LAYOUT is not a usable layout for a backend.
+
+A mistyped field name used to be dropped silently, which turned a
+misconfigured logger into one that writes blank lines. Failing at
+construction time instead makes the typo impossible to miss."
+  (unless (and (list? layout)
+               (not (null? layout)))
+    (scm-error 'scriba-invalid-layout
+               'make-filtered-logger
+               (format #f
+                "Invalid log layout ~a; expected a non-empty list of ~a"
+                layout fields)
+               '() #f))
+  (for-each (lambda (field)
+              (unless (memq field fields)
+                (scm-error 'scriba-invalid-layout
+                           'make-filtered-logger
+                           (format #f
+                            "Unknown log layout field ~a; expected one of ~a"
+                            field fields)
+                           '() #f))) layout) layout)
+
+(define (resolve-cache-defaults kwargs defaults)
+  "Returns KWARGS extended with the current value of every entry in DEFAULTS.
+
+DEFAULTS is an alist of `(keyword . thunk)` pairs. A default is only added when
+its KEYWORD is missing from KWARGS, so explicit call-site arguments always win.
+Thunks are called on every lookup, which is what keeps memoized loggers honest
+about dynamically scoped settings: a `(parameterize ((default-out-port port))
+(scriba-console-logger))` must not reuse the cached logger of another port."
+  (fold (lambda (entry acc)
+          (if (memq (car entry) acc) acc
+              (append acc
+                      (list (car entry)
+                            ((cdr entry)))))) kwargs defaults))
+
+(define-syntax-rule (memoize-logger factory-proc
+                                    (kw thunk) ...)
   "Wraps a logger FACTORY-PROC with a caching layer.
 
 Returns a new variadic procedure that accepts arbitrary keyword arguments (KWARGS).
 When called, it checks a private hash table to see if a logger has already been
-instantiated with the exact same KWARGS. If so, it returns the cached instance.
-If not, it calls FACTORY-PROC with the KWARGS, caches the resulting new logger,
-and returns it.
+instantiated with the exact same configuration. If so, it returns the cached
+instance. If not, it calls FACTORY-PROC, caches the resulting logger, and
+returns it.
 
-This ensures that multiple requests for identically configured loggers (e.g.,
-the same name, level, and format) resolve instantly to the exact same object
-in memory, preventing redundant instantiations and reducing overhead."
-  (let ((cache (make-hash-table)))
+The optional (KW THUNK) pairs declare the defaults that FACTORY-PROC derives
+from dynamically scoped parameters. Their current values are evaluated on every
+call and merged into the cache key (unless the caller passed KW explicitly), so
+parameterized defaults such as `default-out-port` correctly produce distinct
+loggers."
+  (let ((cache (make-hash-table))
+        (defaults (list (cons kw thunk) ...)))
     (lambda kwargs
-      (let ((cached-logger (hash-ref cache kwargs)))
+      (let* ((effective-kwargs (resolve-cache-defaults kwargs defaults))
+             (cached-logger (hash-ref cache effective-kwargs)))
         (if cached-logger cached-logger
-            (let ((new-logger (apply factory-proc kwargs)))
-              (hash-set! cache kwargs new-logger) new-logger))))))
+            (let ((new-logger (apply factory-proc effective-kwargs)))
+              (hash-set! cache effective-kwargs new-logger) new-logger))))))
 
 (define current-log-context
   (make-parameter '()))
@@ -403,6 +555,9 @@ in memory, preventing redundant instantiations and reducing overhead."
 
 (define default-flush-port?
   (make-parameter #t))
+
+(define default-line-ending
+  (make-parameter 'trailing))
 
 (define default-log-layout
   (make-parameter '(level tags time name message context)))

@@ -70,6 +70,12 @@
   (time-machine-manifest-shell (list "guile -L ./src -L ./test"
                                      "-c '((@ (veritas runner) run-tests))'")))
 
+(define (bench)
+  "Run the Veritas benchmarks in test/veritas/bench."
+  (time-machine-manifest-shell (list "env VERITAS_TEST_TYPE=bench"
+                                     "guile -L ./src -L ./test"
+                                     "-c '((@ (veritas runner) run-tests))'")))
+
 (define (hot-reload)
   "Hot-reloading developer's setup."
   (time-machine-manifest-shell (list "watchexec 'maak test'"

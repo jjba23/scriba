@@ -51,7 +51,8 @@
      "Scriba is a structured logging library for GNU Guile that prioritizes
 flexibility and observability.  It provides modular log routing, formatting,
 and filtering, allowing developers to generate human-readable console logs
-during development and machine-readable JSON logs for production environments.
+during development, machine-readable JSON logs for production environments,
+and rotating plaintext logs on disk.
 Key features include an auto-logger configured via environment variables,
 dynamically scoped log contexts using Scheme parameters, ahead-of-time log
 level filtering, and minimal runtime overhead achieved through memoization

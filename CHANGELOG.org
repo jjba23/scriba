@@ -1,0 +1,120 @@
+#+title: scriba changelog
+#+author: Josep Bigorra
+#+email: jjbigorra@gmail.com
+#+options: toc:nil
+
+Notable changes to Scriba, newest first. Titles are git tags
+([[https://codeberg.org/jjba23/scriba/tags][codeberg.org/jjba23/scriba/tags]]); releases before 0.4.0 predate this file,
+so their commit log and tag message are the record.
+
+* 0.4.0 — 2026-10-18
+
+The release that turns the console-shaped line into a shared layout and adds a
+destination that is not a terminal: *the rotating file backend*.
+
+** Added
+
+*** Rotating file backend — ~(scriba file)~
+
+- ~scriba-file-logger~ and ~%make-scriba-file-logger~, taken by the
+  auto-logger when ~SCRIBA_LOGGER=file~.
+- Size-based rotation: the current file is renamed to ~<path>.1~, older
+  backups shift up, and the oldest beyond ~#:max-backups~ is dropped. A file
+  therefore never grows past ~#:max-size~ unless a single line is larger than
+  it. ~#:max-size #f~ disables rotation; ~#:max-backups 0~ keeps no history
+  and truncates instead.
+- ~rotate-file!~ rotates on demand (SIGHUP handler, cron job, test), and
+  ~file-sink-open?~ reports whether Scriba has a sink for a path.
+- Parameters ~default-file-path~, ~default-file-max-size~ (10 MiB) and
+  ~default-file-max-backups~ (5).
+- One sink — one open port and one rotation policy — per path, shared by every
+  logger writing there, so two loggers (~app~, ~db~) cannot fight over
+  rotation or reopen the file per message. A later logger asking for a
+  different policy on the same path takes over for all of them.
+- Rotation counts encoded UTF-8 bytes rather than characters.
+
+*** Shared text layout — ~(scriba layout)~
+
+- ~format-plain-time~, ~format-timestamp~, ~format-context~, ~format-tags~,
+  ~format-name~, ~display->string~ and ~make-text-printer~, so the console,
+  colour console and file backends no longer each carry their own copy of the
+  bracketed field formatting.
+- Timestamps are formatted once per format string per wall-clock second, because
+  ~localtime~ and ~strftime~ consult the timezone database and dominate the
+  cost of a short log line.
+
+*** Line framing
+
+- ~write-log-line~ plus the ~default-line-ending~ parameter and a
+  ~#:line-ending~ argument: ~'trailing~ (the default, and the change described
+  under *Changed* below) or ~'leading~ for streams interleaved with prompts.
+- ~SCRIBA_LINE_ENDING=trailing|leading~, validated: a misspelled value raises
+  instead of being ignored.
+
+*** Validation instead of silence
+
+- ~valid-log-level?~, ~validate-log-level~,  ~valid-log-field?~,
+  ~validate-log-layout~ and the field alphabets ~text-layout-fields~,
+  ~json-layout-fields~ and ~syslog-layout-fields~.
+- A logger built with an unknown level (say ~'verbose~) or a field outside its
+  backend's alphabet now fails loudly at construction. Previously such a logger
+  silently muted its log statements.
+- ~#t~ means "always log" and ~#f~ means "never log", and ~#f~ now also
+  suppresses level-less ~log-message~ calls.
+- ~format-log-message~ formats only when there are arguments; a literal message
+  is passed through untouched, so a lone message containing a tilde is now
+  literal rather than a (likely invalid) format directive.
+
+*** Environment configuration
+
+- ~SCRIBA_FILE_PATH~, ~SCRIBA_FILE_MAX_SIZE~ and ~SCRIBA_FILE_MAX_BACKUPS~ for
+  the file backend.
+- Comma-separated lists (~SCRIBA_LOG_LAYOUT~, ~SCRIBA_TAG_FILTER~,
+  ~SCRIBA_CONTEXT_FILTER~) are split on commas with entries trimmed and empty
+  ones dropped, so ~"a, b ,,c"~ is ~(a b c)~.
+- ~SCRIBA_CONTEXT_FILTER~ takes ~key;value~ pairs, e.g. ~tenant;acme~.
+- An unknown ~SCRIBA_LOGGER~ falls back to the plain console logger instead of
+  leaving the program without one.
+- ~%make-scriba-auto-logger~ is exported for direct use, and logger
+  memoization keys on every parameter that shapes the logger, so
+  ~parameterize~ over a level, port, layout or line ending yields a distinct
+  logger rather than a stale hit.
+
+*** Test and benchmark suites
+
+- New unit specs: ~config-spec.scm~, ~env-config-spec.scm~, ~file-spec.scm~
+  and ~usage-spec.scm~.
+- New benchmark suite ~test/veritas/bench/logging-bench-spec.scm~ with a ~maak
+  bench~ task (~VERITAS_TEST_TYPE=bench~), so tests and benchmarks share one
+  runner and one report format. Every benchmark runs under ~statprof~ and its
+  call count is part of its name.
+- The development environment moves to Veritas 0.7.0.
+
+** Changed
+
+- Console-shaped lines are now newline-*terminated* by default instead of
+  newline-*prefixed*; the old framing is ~#:line-ending 'leading~. The string
+  port specs were updated to the new framing.
+- The console, colour console and file backends build their fields through
+  ~(scriba layout)~; the JSON and syslog backends validate their layouts
+  against their own field alphabets.
+- Memoized backend constructors (~scriba-console-logger~ and friends) now key
+  on the parameter defaults they read, not on a subset of them.
+- ~nil?~ was replaced with ~null?~ in context and tag formatting, and lines are
+  written with ~display~ plus ~newline~ rather than ~format~.
+- The README was rewritten end to end (banner, at-a-glance table, all five
+  backends with executed examples, configuration reference, repository layout,
+  task table) and now carries a repository-local banner asset,
+  ~assets/scriba-banner.svg~.
+- ~.gitignore~ also ignores the ~reports/~ directory Veritas writes failing
+  tasks into.
+
+** Notes
+
+- ~guix.scm~ still builds the working tree as version ~dev~, as it did for
+  every previous release: the release is identified by the ~v0.4.0~ tag rather
+  than by a version string in the tree.
+- Guix's own ~guile-scriba~ definition tracks 0.3.3 until it is updated, so
+  ~guix install guile-scriba~ gives the previous release for the moment; the
+  file backend is available through ~guix.scm~ or ~manifest.scm~ in the
+  meantime.

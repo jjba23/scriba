@@ -25,6 +25,8 @@
 
 (define-module (scriba color-console)
   #:use-module (srfi srfi-1)
+  #:use-module ((scriba layout)
+                #:select (format-plain-time display->string))
   #:use-module (scriba scriba)
   #:export (scriba-color-console-logger %make-scriba-color-console-logger))
 
@@ -55,33 +57,41 @@
 
 (define (format-timestamp format-string)
   "Returns a formatted timestamp string."
-  (format #f "~a[~a]~a" ansi-dim
-          (strftime format-string
-                    (localtime (current-time))) ansi-reset))
+  (string-append ansi-dim "["
+                 (format-plain-time format-string) "]" ansi-reset))
 
 (define (format-context ctx)
   "Converts an alist context into a bracketed string layout."
-  (let ((mdc (map (lambda (pair)
-                    (format #f "[~a=~a]"
-                            (car pair)
-                            (cdr pair))) ctx)))
-    (if (nil? ctx) #f
-        (string-append ansi-dim
-                       (string-join mdc " ") ansi-reset))))
+  (if (null? ctx) #f
+      (string-append ansi-dim
+                     (string-join (map (lambda (pair)
+                                         (string-append "["
+                                                        (display->string (car
+                                                                          pair))
+                                                        "="
+                                                        (display->string (cdr
+                                                                          pair))
+                                                        "]")) ctx) " ")
+                     ansi-reset)))
 
 (define (format-tags tags)
   "Converts an list of tags into a bracketed string layout."
-  (let ((mdc (map (lambda (x)
-                    (format #f "#~a" x)) tags)))
-    (if (nil? tags) #f
-        (string-append ansi-dim
-                       (format #f "[~a]"
-                               (string-join mdc " ")) ansi-reset))))
+  (if (null? tags) #f
+      (string-append ansi-dim "["
+                     (string-join (map (lambda (x)
+                                         (string-append "#"
+                                                        (display->string x)))
+                                       tags) " ") "]" ansi-reset)))
 
 (define (format-name name)
   "Returns the formatted logger name, or an empty string."
   (if name
-      (format #f "~a[~a]~a " ansi-dim name ansi-reset) #f))
+      (string-append ansi-dim
+                     "["
+                     (display->string name)
+                     "]"
+                     ansi-reset
+                     " ") #f))
 
 (define* (%make-scriba-color-console-logger #:key name
                                             (level (default-log-level))
@@ -90,7 +100,10 @@
                                             (timestamp-format (default-time-format))
                                             (out-port (default-out-port))
                                             (flush-port? (default-flush-port?))
-                                            (layout (default-log-layout)))
+                                            (layout (default-log-layout))
+                                            (line-ending (default-line-ending)))
+  (validate-log-layout layout
+                       #:fields text-layout-fields)
   (define name-str
     (format-name name))
 
@@ -109,7 +122,7 @@
                              (format-timestamp timestamp-format) #f))
                (ctx-str (format-context (current-log-context)))
                (tags-str (format-tags (current-log-tags)))
-               (raw-user-msg (apply format #f msg args))
+               (raw-user-msg (format-log-message msg args))
 
                (user-msg (string-append color raw-user-msg ansi-reset))
 
@@ -127,7 +140,7 @@
 
                (final-output (string-join ordered-strings " ")))
 
-          (format out-port "\n~a" final-output)
+          (write-log-line out-port final-output line-ending)
 
           (when flush-port?
             (force-output out-port))))))
@@ -146,4 +159,12 @@
                         #:log-critical-proc (make-color-printer 'critical)))
 
 (define scriba-color-console-logger
-  (memoize-logger %make-scriba-color-console-logger))
+  (memoize-logger %make-scriba-color-console-logger
+                  (#:level default-log-level)
+                  (#:context-filter default-context-filter)
+                  (#:tag-filter default-tag-filter)
+                  (#:timestamp-format default-time-format)
+                  (#:out-port default-out-port)
+                  (#:flush-port? default-flush-port?)
+                  (#:layout default-log-layout)
+                  (#:line-ending default-line-ending)))

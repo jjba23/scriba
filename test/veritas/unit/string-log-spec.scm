@@ -28,7 +28,7 @@
                                                #:layout '(level tags name
                                                                 message
                                                                 context))))
-           
+
            (test "Layout and Context Layout Rendering"
                  (assert-no-error (lambda ()
                                     (with-log-context '((sample-1 . value-1))
@@ -37,8 +37,7 @@
                                     (let ((result (get-output-string
                                                    string-port)))
                                       (unless (equal?
-                                               "
-[INFO] Some log with context [sample-1=value-1]"
+                                               "[INFO] Some log with context [sample-1=value-1]\n"
                                                result)
                                         (throw 'unexpected-log-message result))))
                   #:name
@@ -54,7 +53,7 @@
                                                #:layout '(level tags name
                                                                 message
                                                                 context))))
-           
+
            (test "Matching Tag Interception"
                  (assert-no-error (lambda ()
                                     (with-log-tags '(performance is quite
@@ -64,8 +63,7 @@
                                     (let ((result (get-output-string
                                                    string-port)))
                                       (unless (string-prefix-ci?
-                                               "
-[#performance #is #quite #important] Some log without level but with tags with context"
+                                               "[#performance #is #quite #important] Some log without level but with tags with context"
                                                result)
                                         (throw 'unexpected-log-message result))))
                   #:name
@@ -79,7 +77,7 @@
                                                #:layout '(level tags name
                                                                 message
                                                                 context))))
-           
+
            (test "Non-Matching Tag Suppression"
                  (assert-no-error (lambda ()
                                     (with-log-tags '(irrelevant tag)
@@ -100,7 +98,7 @@
                                                #:context-filter '((type . performance))
                                                #:layout '(level name message
                                                                 context))))
-           
+
            (test "Matching Context Interception"
                  (assert-no-error (lambda ()
                                     (with-log-context '((type . performance))
@@ -109,8 +107,7 @@
                                     (let ((result (get-output-string
                                                    string-port)))
                                       (unless (string-prefix-ci?
-                                               "
-Some log without level but with context [type=performance]"
+                                               "Some log without level but with context [type=performance]"
                                                result)
                                         (throw 'unexpected-log-message result))))
                   #:name
@@ -122,7 +119,7 @@ Some log without level but with context [type=performance]"
                                                #:context-filter '((type . performance))
                                                #:layout '(level name message
                                                                 context))))
-           
+
            (test "Non-Matching Context Suppression"
                  (assert-no-error (lambda ()
                                     (with-log-context '((irrelevant . context))

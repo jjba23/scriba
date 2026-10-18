@@ -26,37 +26,45 @@
 
 (define-module (scriba syslog)
   #:use-module (srfi srfi-1)
+  #:use-module ((scriba layout)
+                #:select (format-plain-time display->string))
   #:use-module (scriba scriba)
-  #:export (scriba-syslog-logger %make-scriba-syslog-logger))
+  #:export (scriba-syslog-logger %make-scriba-syslog-logger
+                                 default-syslog-time-format))
 
 (define (format-timestamp format-string)
   "Returns a formatted timestamp string."
-  (format #f "~a"
-          (strftime format-string
-                    (localtime (current-time)))))
+  (format-plain-time format-string))
+
+(define default-syslog-time-format
+  (make-parameter iso-8601-time-format))
 
 (define (format-context ctx)
   "Converts an alist context into a bracketed string layout: [k=v] [k=v]."
-  (let ((mdc (map (lambda (pair)
-                    (format #f "~a=\"~a\""
-                            (car pair)
-                            (cdr pair))) ctx)))
-    (if (nil? ctx) #f
-        (format #f "[~a]"
-                (string-join mdc " ")))))
+  (if (null? ctx) #f
+      (string-append "["
+                     (string-join (map (lambda (pair)
+                                         (string-append (display->string (car
+                                                                          pair))
+                                                        "=\""
+                                                        (display->string (cdr
+                                                                          pair))
+                                                        "\"")) ctx) " ") "]")))
 
 (define (format-tags tags)
   "Converts a list of tags into a bracketed string layout: [#a #b #c]."
-  (let ((mdc (map (lambda (x)
-                    (format #f "#~a" x)) tags)))
-    (if (nil? tags) #f
-        (format #f "[~a]"
-                (string-join mdc " ")))))
+  (if (null? tags) #f
+      (string-append "["
+                     (string-join (map (lambda (x)
+                                         (string-append "#"
+                                                        (display->string x)))
+                                       tags) " ") "]")))
 
 (define (format-name name)
   "Returns the formatted logger name, or an empty string."
   (if name
-      (format #f "[~a]" name) #f))
+      (string-append "["
+                     (display->string name) "]") #f))
 
 (define* (level-to-priority lvl
                             #:key (facility 1))
@@ -81,9 +89,10 @@
                                      (level (default-log-level))
                                      (context-filter (default-context-filter))
                                      (tag-filter (default-tag-filter))
-                                     (timestamp-format iso-8601-time-format)
+                                     (timestamp-format (default-syslog-time-format))
                                      (out-port (default-out-port))
                                      (flush-port? (default-flush-port?))
+                                     (line-ending (default-line-ending))
                                      (layout '(level time
                                                      host
                                                      name
@@ -92,6 +101,8 @@
                                                      context
                                                      message
                                                      tags)))
+  (validate-log-layout layout
+                       #:fields syslog-layout-fields)
   (define name-str
     (format-name name))
 
@@ -104,7 +115,7 @@
                              (format-timestamp timestamp-format) #f))
                (ctx-str (format-context (current-log-context)))
                (tags-str (format-tags (current-log-tags)))
-               (user-msg (apply format #f msg args))
+               (user-msg (format-log-message msg args))
                (parts-alist `((level unquote level-str)
                               (tags unquote tags-str)
                               (time unquote time-str)
@@ -121,7 +132,7 @@
                                             layout))
 
                (final-output (string-join ordered-strings " ")))
-          (format out-port "\n~a" final-output)
+          (write-log-line out-port final-output line-ending)
           (when flush-port?
             (force-output out-port))))))
 
@@ -139,4 +150,11 @@
                         #:log-critical-proc (make-syslog-printer 'critical)))
 
 (define scriba-syslog-logger
-  (memoize-logger %make-scriba-syslog-logger))
+  (memoize-logger %make-scriba-syslog-logger
+                  (#:level default-log-level)
+                  (#:context-filter default-context-filter)
+                  (#:tag-filter default-tag-filter)
+                  (#:timestamp-format default-syslog-time-format)
+                  (#:out-port default-out-port)
+                  (#:flush-port? default-flush-port?)
+                  (#:line-ending default-line-ending)))
