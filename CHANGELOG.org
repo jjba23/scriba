@@ -7,6 +7,13 @@ Notable changes to Scriba, newest first. Titles are git tags
 ([[https://codeberg.org/jjba23/scriba/tags][codeberg.org/jjba23/scriba/tags]]); releases before 0.4.0 predate this file,
 so their commit log and tag message are the record.
 
+* 0.4.1 — 2026-10-22
+
+A maintenance release.  The sources are identical to =0.4.0=, which is where the
+rotating file backend, ~(scriba layout)~ and the new test and benchmark suites
+landed; the tag exists so that downstream packagers have a release to follow.
+Nothing changed in the API, the behaviour or the documentation.
+
 * 0.4.0 — 2026-10-18
 
 The release that turns the console-shaped line into a shared layout and adds a

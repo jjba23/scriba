@@ -166,12 +166,11 @@ guix shell -m manifest.scm -- guile my-program.scm
 #+end_src
 
 #+begin_quote
-*Version note:* this tree is release *v0.4.0*, which adds the rotating *file*
+*Version note:* this tree is release *v0.4.1*, a maintenance release whose
+sources are identical to *v0.4.0* -- the release that added the rotating *file*
 backend, the shared ~(scriba layout)~ module and new test and benchmark suites.
-Guix's ~guile-scriba~ definition still tracks *v0.3.3*, so ~guix install
-guile-scriba~ gives you the previous release until it is updated; use this
-repository's own definitions (next section) for v0.4.0. See
-[[file:CHANGELOG.org][CHANGELOG.org]] for what changed.
+No API, behaviour or documentation changed between the two tags; see
+[[file:CHANGELOG.org][CHANGELOG.org]] for what each release contains.
 #+end_quote
 
 ** From this repository (latest code)
