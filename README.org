@@ -37,16 +37,19 @@ and compile-time macros."
 Guix package: ~guile-scriba~
 
 * At a glance
+:PROPERTIES:
+:CUSTOM_ID: at-a-glance
+:END:
 
-| You want to…                                | Scriba gives you…                                                    |
-|---------------------------------------------+----------------------------------------------------------------------|
-| Understand what your program is doing       | ~log-info~, ~log-warning~, ~log-error~ and friends, with a level hierarchy |
-| Correlate lines with a request              | ~with-log-context~ — dynamically scoped key/value pairs               |
-| Turn categories of logs on and off          | ~with-log-tags~ plus tag filters, with or without levels              |
-| Ship structured logs to Loki or Elasticsearch | A JSON backend that emits one object per line                      |
-| Keep logs in a file that does not grow forever | A rotating file backend with size limits and backups               |
-| Change behaviour per environment            | The ~scriba-auto-logger~, configured by ~SCRIBA_*~ variables          |
-| Pay almost nothing for muted log statements | Ahead-of-time level filtering: a muted call is a no-op                |
+| You want to…                                   | Scriba gives you…                                                          |
+|------------------------------------------------+----------------------------------------------------------------------------|
+| Understand what your program is doing          | ~log-info~, ~log-warning~, ~log-error~ and friends, with a level hierarchy |
+| Correlate lines with a request                 | ~with-log-context~ — dynamically scoped key/value pairs                    |
+| Turn categories of logs on and off             | ~with-log-tags~ plus tag filters, with or without levels                   |
+| Ship structured logs to Loki or Elasticsearch  | A JSON backend that emits one object per line                              |
+| Keep logs in a file that does not grow forever | A rotating file backend with size limits and backups                       |
+| Change behaviour per environment               | The ~scriba-auto-logger~, configured by ~SCRIBA_*~ variables               |
+| Pay almost nothing for muted log statements    | Ahead-of-time level filtering: a muted call is a no-op                     |
 
 Find the complete technical [[https://jointhefreeworld.org/api-docs/scriba/API.html][API documentation here]].
 
@@ -56,6 +59,9 @@ Available loggers: ~console~, ~color-console~, ~json~, ~syslog~ and ~file~.
 [[https://jointhefreeworld.org/static-assets/scriba/screen-2026-06-02-20-11-36.png]]
 
 * Features
+:PROPERTIES:
+:CUSTOM_ID: features
+:END:
 
 - *Five backends, one API.* Plain console, colour console, JSON, syslog
   (RFC 5424-shaped) and rotating files. Every backend accepts the same log
@@ -82,11 +88,92 @@ Available loggers: ~console~, ~color-console~, ~json~, ~syslog~ and ~file~.
   threads, no fibers, no daemons.
 - *Hackable by design.* Logger construction is a handful of records, keyword
   arguments and macros — writing your own backend is a page of code
-  ([[*Bring your own backend][see below]]).
+  ([[#bring-your-own-backend][see below]]).
+
+* Ways to install
+:PROPERTIES:
+:CUSTOM_ID: ways-to-install
+:END:
+
+/Four routes to the same 0.4.2, from the most automated to the most manual.  They all build the tag this README documents./
+
+** From the Guix channel
+:PROPERTIES:
+:CUSTOM_ID: from-the-guix-channel
+:END:
+*GNU Guix* is the functional package manager this project is developed with: a build is a pure function of its inputs, so the same recipe gives the same result everywhere, and an upgrade that goes wrong can be rolled back.
+
+The jointhefreeworld channel carries ~guile-scriba~ at 0.4.2, so a checkout of the channel is enough — no package definition to write:
+
+#+begin_src shell
+git clone https://codeberg.org/jjba23/guix-jointhefreeworld.git
+guix install -L ./guix-jointhefreeworld guile-scriba
+#+end_src
+
+Add the channel to ~$HOME/.config/guix/channels.scm~ (the channel's README has the four lines) and a plain ~guix install guile-scriba~ keeps working on every later ~guix pull~.
+
+** From the Nix flake
+:PROPERTIES:
+:CUSTOM_ID: from-the-nix-flake
+:END:
+*Nix* offers the same declarative, reproducible model with its own language, its own store and a binary cache, and it is a natural fit if the rest of your machine is already described in Nix.
+
+The jointhefreeworld flake builds this project with this repository's own expression, so the package cannot drift from the source:
+
+#+begin_src shell
+nix build github:jjba23/nix-jointhefreeworld#guile-scriba
+#+end_src
+
+The same attribute is available as an overlay, so ~pkgs.jointhefreeworld.guile-scriba~ works inside a NixOS or home-manager configuration too.
+
+** As a container image
+:PROPERTIES:
+:CUSTOM_ID: as-a-container-image
+:END:
+*Podman or Docker* is the route that puts nothing on the host: the ~Dockerfile~ in this repository builds the project in a builder stage and copies only what it installed into a runtime stage, so the image is small and the host keeps its own toolchain untouched.
+
+#+begin_src shell
+podman build -t scriba .   # docker build -t scriba . also works
+podman run --rm -it scriba
+#+end_src
+
+The image's entry point is Guile, with scriba on its load path, which makes it useful for a quick try and for reproducing a bug on a clean system.
+
+** As a distribution package
+:PROPERTIES:
+:CUSTOM_ID: as-a-distribution-package
+:END:
+*Debian, openSUSE and Arch* each get the project through their own package manager.  Packaging lives in this repository under ~packaging/~ and is pinned to the same release tag, so the recipes and the sources they build are versioned together.
+
+None of the three archives ships scriba yet, so these are recipes to build rather than packages to install from a mirror:
+
+| Distribution   | Package  | How to build it                                                                     |
+|----------------+----------+-------------------------------------------------------------------------------------|
+| Debian, Ubuntu | ~scriba~ | copy ~packaging/debian~ to the repository root, then ~dpkg-buildpackage -us -uc -b~ |
+| openSUSE       | ~scriba~ | ~osc build~ with ~packaging/opensuse~                                               |
+| Arch           | ~scriba~ | ~makepkg -si~ in ~packaging/arch~                                                   |
+
+Each recipe carries its own dependency list, so a missing library fails the build with its name rather than producing a package that cannot load.
+
+** Which one?
+:PROPERTIES:
+:CUSTOM_ID: which-one
+:END:
+- *Guix* if you want the toolchain the project is tested with, and the ability to roll back a bad upgrade.
+- *Nix* if the rest of your machine is already declarative; the flake pins nixpkgs and gives you a binary cache.
+- *Container* if you only want to try the release, or reproduce a report on a machine that has nothing installed.
+- *Distribution package* if you want the project managed by the same tool as the rest of your system, with its licence, manual page and launcher in the usual places.
+
 
 * Quick Start
+:PROPERTIES:
+:CUSTOM_ID: quick-start
+:END:
 
 ** 1. Install it
+:PROPERTIES:
+:CUSTOM_ID: 1-install-it
+:END:
 
 With Guix, one command:
 
@@ -98,6 +185,9 @@ Prefer a throwaway environment? ~guix shell guile-scriba guile -- guile your-scr
 works too, without installing anything permanently.
 
 ** 2. Write your first log line
+:PROPERTIES:
+:CUSTOM_ID: 2-write-your-first-log-line
+:END:
 
 Save this as ~hello-log.scm~:
 
@@ -113,6 +203,9 @@ Save this as ~hello-log.scm~:
 #+end_src
 
 ** 3. Run it
+:PROPERTIES:
+:CUSTOM_ID: 3-run-it
+:END:
 
 #+begin_src shell
 guile hello-log.scm
@@ -127,6 +220,9 @@ That is the whole setup: two imports, one call to ~scriba-auto-logger~, and
 log statements as you need them. No configuration files, no init rituals ✨
 
 ** 4. Change everything with one environment variable
+:PROPERTIES:
+:CUSTOM_ID: 4-change-everything-with-one-environment-variable
+:END:
 
 The same program, unchanged, becomes structured JSON for your log shipper:
 
@@ -143,8 +239,14 @@ Swap ~json~ for ~file~ (with ~SCRIBA_FILE_PATH=/var/log/app.log~), ~syslog~ or
 ~color-console~ as needed. That is the everyday Scriba workflow.
 
 * Installing
+:PROPERTIES:
+:CUSTOM_ID: installing
+:END:
 
 ** With Guix (recommended)
+:PROPERTIES:
+:CUSTOM_ID: with-guix-recommended
+:END:
 
 ~guile-scriba~ is packaged in Guix proper:
 
@@ -174,6 +276,9 @@ No API, behaviour or documentation changed between the two tags; see
 #+end_quote
 
 ** From this repository (latest code)
+:PROPERTIES:
+:CUSTOM_ID: from-this-repository-latest-code
+:END:
 
 Clone and use the pinned development environment, which includes Guile, Guile
 JSON, Veritas and the documentation tooling:
@@ -192,6 +297,9 @@ guix shell -f guix.scm -- guile -L ./src -c '(use-modules (scriba console))'
 #+end_src
 
 ** Manually, without Guix
+:PROPERTIES:
+:CUSTOM_ID: manually-without-guix
+:END:
 
 Scriba is plain Scheme source; nothing needs compiling. Clone the repository,
 make sure [[https://github.com/aconchillo/guile-json][guile-json]] is available, and point Guile at the source tree:
@@ -233,20 +341,29 @@ flexibility and observability.")
 #+end_src
 
 * Requirements
+:PROPERTIES:
+:CUSTOM_ID: requirements
+:END:
 
-| Requirement | Version      | Notes                                                        |
-|-------------+--------------+--------------------------------------------------------------|
-| GNU Guile   | 3.0 or newer | Tested with ~guile-3.0~ and ~guile-next~                       |
-| guile-json  | 4.x          | Required only by the JSON backend and the auto-logger         |
-| POSIX system | —            | Uses ~gethostname~, ~stat~, ~localtime~, file rotation         |
+| Requirement  | Version      | Notes                                                  |
+|--------------+--------------+--------------------------------------------------------|
+| GNU Guile    | 3.0 or newer | Tested with ~guile-3.0~ and ~guile-next~               |
+| guile-json   | 4.x          | Required only by the JSON backend and the auto-logger  |
+| POSIX system | —            | Uses ~gethostname~, ~stat~, ~localtime~, file rotation |
 
 Development and testing additionally use [[https://codeberg.org/jjba23/veritas][Veritas]] (the test framework),
 [[https://codeberg.org/jjba23/maak][maak]] (task runner) and [[https://codeberg.org/luis-felipe/guile-documenta][Documenta]] (API docs) — all provided by
 ~manifest.scm~.
 
 * Usage
+:PROPERTIES:
+:CUSTOM_ID: usage
+:END:
 
 ** The Auto-Configured Logger
+:PROPERTIES:
+:CUSTOM_ID: the-auto-configured-logger
+:END:
 
 While you can instantiate specific loggers manually, the simplest way to get
 started is with the *auto-logger*. It reads environment variables (and, in the
@@ -280,6 +397,9 @@ Because the ~get-env-*~ functions act as defaults for the ~#:key~ arguments of
 too: ~(scriba-auto-logger #:level 'trace)~.
 
 ** Choosing a Backend
+:PROPERTIES:
+:CUSTOM_ID: choosing-a-backend
+:END:
 
 Each logger supports a shared set of options, with defaults that may differ per
 backend. See [[file:src/scriba/][src/scriba]] for the full definitions, and the unit tests
@@ -290,6 +410,9 @@ the primary interface between your application and Scriba; instantiate them
 directly when you want full control and do not need the auto-logger.
 
 *** Console logger
+:PROPERTIES:
+:CUSTOM_ID: console-logger
+:END:
 
 Bracketed plaintext — ideal for terminals, sidecars and log files.
 
@@ -314,6 +437,9 @@ Bracketed plaintext — ideal for terminals, sidecars and log files.
 #+end_example
 
 *** Colour console logger
+:PROPERTIES:
+:CUSTOM_ID: colour-console-logger
+:END:
 
 The same layout, with ANSI colours per level:
 
@@ -333,6 +459,9 @@ the destination is a terminal; for files and pipes prefer the plain console or
 JSON backend.
 
 *** JSON logger
+:PROPERTIES:
+:CUSTOM_ID: json-logger
+:END:
 
 One JSON object per line, ready for Loki, Elasticsearch, Datadog, or ~jq~.
 
@@ -362,6 +491,9 @@ Context entries are inlined as top-level keys, tags become an array
 #+end_example
 
 *** Syslog logger
+:PROPERTIES:
+:CUSTOM_ID: syslog-logger
+:END:
 
 RFC 5424-shaped framing:
 
@@ -392,6 +524,9 @@ The syslog backend also understands the extra ~process-id~ and ~message-id~
 layout fields.
 
 *** File logger
+:PROPERTIES:
+:CUSTOM_ID: file-logger
+:END:
 
 The file logger appends the same bracketed plaintext layout as the console
 logger, and rotates the file when it grows past ~#:max-size~.
@@ -436,6 +571,9 @@ Set ~#:flush-port? #f~ (or ~SCRIBA_FLUSH_PORT=false~) to let the port buffer
 lines instead of flushing every message; this trades durability for speed.
 
 *** Example log lines, side by side
+:PROPERTIES:
+:CUSTOM_ID: example-log-lines-side-by-side
+:END:
 
 Console:
 
@@ -463,6 +601,9 @@ Syslog:
 #+end_example
 
 ** Log Levels
+:PROPERTIES:
+:CUSTOM_ID: log-levels
+:END:
 
 For Scriba, log level is an opt-in concept. Not every system benefits from the
 same kind of log filtering. Other approaches, like tag-based or
@@ -498,6 +639,9 @@ raised scriba-invalid-log-level: Invalid log level verbose;
 everything through.
 
 ** Log Context
+:PROPERTIES:
+:CUSTOM_ID: log-context
+:END:
 
 For better observability, it is often useful to attach dynamic metadata to your
 log lines. Scriba handles this seamlessly via contexts:
@@ -527,6 +671,9 @@ numbers and strings loosely).
 #+end_src
 
 ** Log Tags
+:PROPERTIES:
+:CUSTOM_ID: log-tags
+:END:
 
 Also known as property-based logging. Any log line can carry tags, which you
 can filter on — with or without levels.
@@ -550,6 +697,9 @@ macro, and filtered with ~#:tag-filter~:
 #+end_src
 
 ** Log Routing
+:PROPERTIES:
+:CUSTOM_ID: log-routing
+:END:
 
 In general, the most common use-case for programs is to emit log lines to
 standard output. From there you can capture the output and redirect as needed.
@@ -566,7 +716,7 @@ By default:
 #+end_src
 
 Logging to a file is a backend of its own, with rotation handled for you (see
-[[*File logger][File logger]]):
+[[#file-logger][File logger]]):
 
 #+begin_src scheme
 (use-modules (scriba scriba)
@@ -590,6 +740,9 @@ file descriptor:
 #+end_src
 
 ** Capturing Logs in Tests
+:PROPERTIES:
+:CUSTOM_ID: capturing-logs-in-tests
+:END:
 
 A string port is the easiest way to assert on what your program logs:
 
@@ -603,6 +756,9 @@ A string port is the easiest way to assert on what your program logs:
 #+end_src
 
 ** Line Endings
+:PROPERTIES:
+:CUSTOM_ID: line-endings
+:END:
 
 Log lines are terminated with a trailing newline by default. If your program
 writes prompts or partial lines to the same port, you can prepend the newline
@@ -617,6 +773,9 @@ This is also configurable globally via the ~default-line-ending~ parameter, or
 through ~SCRIBA_LINE_ENDING~ with the auto-logger.
 
 ** Log Format
+:PROPERTIES:
+:CUSTOM_ID: log-format
+:END:
 
 Customise the log format and disable fields you do not need with ~#:layout~:
 
@@ -647,6 +806,9 @@ SCRIBA_LOG_LAYOUT=level,time,name,message,context my-app
 #+end_src
 
 ** Bring your own backend
+:PROPERTIES:
+:CUSTOM_ID: bring-your-own-backend
+:END:
 
 Every backend is just a formatter plus a port. Reuse the shared pieces — level
 filtering, tag/context filters, argument formatting — and only supply the line
@@ -693,6 +855,9 @@ Useful building blocks from ~(scriba layout)~: ~format-plain-time~,
 ~write-log-line~, ~memoize-logger~.
 
 * Configuration
+:PROPERTIES:
+:CUSTOM_ID: configuration
+:END:
 
 Scriba resolves a setting in three layers, each overriding the one below it:
 
@@ -709,24 +874,27 @@ auto-logger is the only backend factory that reads the environment, so direct
 constructor calls are configured with keywords and parameters.
 
 ** Environment Variables
+:PROPERTIES:
+:CUSTOM_ID: environment-variables
+:END:
 
 The auto-logger checks for ~SCRIBA_~ prefixed environment variables.
 
-| Variable                  | Meaning                                                                | Default                                   |
-|---------------------------+------------------------------------------------------------------------+-------------------------------------------|
-| ~SCRIBA_LOGGER~            | Backend: ~console~, ~color-console~, ~json~, ~syslog~ or ~file~            | ~console~                                  |
-| ~SCRIBA_LOG_LEVEL~         | Minimum severity: ~trace~, ~debug~, ~info~, ~success~, ~warning~, ~error~, ~critical~ | ~info~                                    |
-| ~SCRIBA_LOG_LAYOUT~        | Comma-separated fields to render, e.g. ~level,time,message,context~      | ~level,tags,time,name,message,context~     |
-| ~SCRIBA_TAG_FILTER~        | Comma-separated tags; only lines carrying one of them are logged        | empty (no filtering)                       |
-| ~SCRIBA_CONTEXT_FILTER~    | Comma-separated ~key;value~ pairs, e.g. ~tenant;acme~                    | empty (no filtering)                       |
-| ~SCRIBA_TIMESTAMP_FORMAT~  | ~strftime~ format string                                                | ~"%F %T %Z"~ (ISO-8601 for syslog)         |
-| ~SCRIBA_OUT_PORT~          | ~stdout~ or ~stderr~                                                     | ~(current-output-port)~                    |
-| ~SCRIBA_FLUSH_PORT~        | ~true~ or ~1~ to flush after every line                                 | ~#t~                                       |
-| ~SCRIBA_LINE_ENDING~       | ~trailing~ or ~leading~ — where the newline goes                        | ~trailing~                                 |
-| ~SCRIBA_JSON_PRETTY~       | ~true~ or ~1~ to pretty-print JSON                                      | ~#f~                                       |
-| ~SCRIBA_FILE_PATH~         | Destination file when ~SCRIBA_LOGGER=file~ (required by that backend)    | unset                                      |
-| ~SCRIBA_FILE_MAX_SIZE~     | Rotate after this many bytes, or ~off~ to never rotate                  | ~10485760~ (10 MiB)                        |
-| ~SCRIBA_FILE_MAX_BACKUPS~  | How many rotated backups to keep (~0~ truncates instead)                | ~5~                                        |
+| Variable                  | Meaning                                                                               | Default                                |
+|---------------------------+---------------------------------------------------------------------------------------+----------------------------------------|
+| ~SCRIBA_LOGGER~           | Backend: ~console~, ~color-console~, ~json~, ~syslog~ or ~file~                       | ~console~                              |
+| ~SCRIBA_LOG_LEVEL~        | Minimum severity: ~trace~, ~debug~, ~info~, ~success~, ~warning~, ~error~, ~critical~ | ~info~                                 |
+| ~SCRIBA_LOG_LAYOUT~       | Comma-separated fields to render, e.g. ~level,time,message,context~                   | ~level,tags,time,name,message,context~ |
+| ~SCRIBA_TAG_FILTER~       | Comma-separated tags; only lines carrying one of them are logged                      | empty (no filtering)                   |
+| ~SCRIBA_CONTEXT_FILTER~   | Comma-separated ~key;value~ pairs, e.g. ~tenant;acme~                                 | empty (no filtering)                   |
+| ~SCRIBA_TIMESTAMP_FORMAT~ | ~strftime~ format string                                                              | ~"%F %T %Z"~ (ISO-8601 for syslog)     |
+| ~SCRIBA_OUT_PORT~         | ~stdout~ or ~stderr~                                                                  | ~(current-output-port)~                |
+| ~SCRIBA_FLUSH_PORT~       | ~true~ or ~1~ to flush after every line                                               | ~#t~                                   |
+| ~SCRIBA_LINE_ENDING~      | ~trailing~ or ~leading~ — where the newline goes                                      | ~trailing~                             |
+| ~SCRIBA_JSON_PRETTY~      | ~true~ or ~1~ to pretty-print JSON                                                    | ~#f~                                   |
+| ~SCRIBA_FILE_PATH~        | Destination file when ~SCRIBA_LOGGER=file~ (required by that backend)                 | unset                                  |
+| ~SCRIBA_FILE_MAX_SIZE~    | Rotate after this many bytes, or ~off~ to never rotate                                | ~10485760~ (10 MiB)                    |
+| ~SCRIBA_FILE_MAX_BACKUPS~ | How many rotated backups to keep (~0~ truncates instead)                              | ~5~                                    |
 
 A few details that save you a debugging session:
 
@@ -738,6 +906,9 @@ A few details that save you a debugging session:
   error. Use commas; blank entries around commas are ignored.
 
 ** Defaults and Parameters
+:PROPERTIES:
+:CUSTOM_ID: defaults-and-parameters
+:END:
 
 All defaults are Guile parameters, which means ~parameterize~ gives you
 per-thread, per-scope overrides without touching global state:
@@ -754,22 +925,22 @@ per-thread, per-scope overrides without touching global state:
 [WARNING] shown
 #+end_example
 
-| Parameter                     | Default                                 | Purpose                                  |
-|-------------------------------+-----------------------------------------+------------------------------------------|
-| ~default-log-level~            | ~'info~                                  | Effective level for new loggers          |
-| ~default-logger~               | ~'console~                               | Backend the auto-logger picks            |
-| ~default-out-port~             | ~(current-output-port)~                   | Default destination port                 |
-| ~default-flush-port?~          | ~#t~                                     | Flush after every line                   |
-| ~default-time-format~          | ~"%F %T %Z"~                             | ~strftime~ format for timestamps         |
-| ~default-log-layout~           | ~'(level tags time name message context)~ | Fields rendered by text backends         |
-| ~default-line-ending~          | ~'trailing~                              | Where the newline goes                   |
-| ~default-tag-filter~           | ~'()~                                    | Tags a logger keeps                      |
-| ~default-context-filter~       | ~'()~                                    | Context pairs a logger requires          |
-| ~default-json-pretty?~         | ~#f~                                     | Indented JSON output                     |
-| ~default-syslog-time-format~   | ISO-8601                                | Syslog timestamps                        |
-| ~default-file-path~            | ~#f~                                     | File backend destination                 |
-| ~default-file-max-size~        | ~10485760~                               | Rotation threshold in bytes              |
-| ~default-file-max-backups~     | ~5~                                      | Rotated files kept                       |
+| Parameter                    | Default                                   | Purpose                          |
+|------------------------------+-------------------------------------------+----------------------------------|
+| ~default-log-level~          | ~'info~                                   | Effective level for new loggers  |
+| ~default-logger~             | ~'console~                                | Backend the auto-logger picks    |
+| ~default-out-port~           | ~(current-output-port)~                   | Default destination port         |
+| ~default-flush-port?~        | ~#t~                                      | Flush after every line           |
+| ~default-time-format~        | ~"%F %T %Z"~                              | ~strftime~ format for timestamps |
+| ~default-log-layout~         | ~'(level tags time name message context)~ | Fields rendered by text backends |
+| ~default-line-ending~        | ~'trailing~                               | Where the newline goes           |
+| ~default-tag-filter~         | ~'()~                                     | Tags a logger keeps              |
+| ~default-context-filter~     | ~'()~                                     | Context pairs a logger requires  |
+| ~default-json-pretty?~       | ~#f~                                      | Indented JSON output             |
+| ~default-syslog-time-format~ | ISO-8601                                  | Syslog timestamps                |
+| ~default-file-path~          | ~#f~                                      | File backend destination         |
+| ~default-file-max-size~      | ~10485760~                                | Rotation threshold in bytes      |
+| ~default-file-max-backups~   | ~5~                                       | Rotated files kept               |
 
 Logger *construction* also accepts ~#:name~, ~#:level~, ~#:layout~,
 ~#:out-port~, ~#:flush-port?~, ~#:line-ending~, ~#:tag-filter~,
@@ -777,6 +948,9 @@ Logger *construction* also accepts ~#:name~, ~#:level~, ~#:layout~,
 backends — ~#:pretty?~, ~#:path~, ~#:max-size~ and ~#:max-backups~.
 
 * Why Scriba?
+:PROPERTIES:
+:CUSTOM_ID: why-scriba
+:END:
 
 A primary advantage of Scriba over standard ~display~, ~write~, or ~println~
 procedures is fine-grained control over log routing, formatting and filtering,
@@ -793,6 +967,9 @@ against a pretty colourised console and ship the very same code with JSON logs,
 or into a rotating file, or to syslog. Nothing in your application changes.
 
 * Observability and Structured Logging
+:PROPERTIES:
+:CUSTOM_ID: observability-and-structured-logging
+:END:
 
 In modern software development, simply writing ~(display "\nError happened")~
 is no longer enough. As applications grow in complexity, understanding their
@@ -820,6 +997,9 @@ of your application code.
 Log level is optional in Scriba, as log context can also provide log control.
 
 * Performance Under the Hood
+:PROPERTIES:
+:CUSTOM_ID: performance-under-the-hood
+:END:
 
 Logging is a global cross-cutting concern, and it should never become the
 bottleneck in your application's execution.
@@ -828,6 +1008,9 @@ Scriba achieves high throughput by front-loading as much computation as
 possible, using the macro system, and leveraging Guile's native optimizations.
 
 ** Constructor Memoization
+:PROPERTIES:
+:CUSTOM_ID: constructor-memoization
+:END:
 
 Creating and configuring loggers can involve reading environments, parsing
 strings, and allocating records.
@@ -846,6 +1029,9 @@ configured logger. If you need a brand new instance regardless of caching, call
 the raw factory (e.g. ~%make-scriba-console-logger~) directly.
 
 ** Ahead-of-Time Level Filtering
+:PROPERTIES:
+:CUSTOM_ID: ahead-of-time-level-filtering
+:END:
 
 Instead of checking the log severity level on every single ~log-*~ invocation,
 Scriba evaluates the hierarchy exactly once when the logger is instantiated.
@@ -860,6 +1046,9 @@ Scriba evaluates the hierarchy exactly once when the logger is instantiated.
 passes the threshold.
 
 ** Cheap Lines When a Line Is Emitted
+:PROPERTIES:
+:CUSTOM_ID: cheap-lines-when-a-line-is-emitted
+:END:
 
 Profiling the enabled path paid off too, and the benchmark below is what keeps
 those gains honest:
@@ -874,6 +1063,9 @@ those gains honest:
   field building uses ~string-append~ instead of format directives.
 
 ** Benchmarks
+:PROPERTIES:
+:CUSTOM_ID: benchmarks
+:END:
 
 The benchmarks live where the tests live, in
 [[file:test/veritas/bench/logging-bench-spec.scm][test/veritas/bench/logging-bench-spec.scm]], and are driven by the same Veritas
@@ -927,6 +1119,9 @@ on your hardware and its load, so treat them as orders of magnitude rather than
 contracts.
 
 ** Compile-Time Macros
+:PROPERTIES:
+:CUSTOM_ID: compile-time-macros
+:END:
 
 A great deal of effort is taken to keep runtime overhead strictly minimal, and
 Scriba avoids doing much dynamic dispatch or runtime reflection.
@@ -937,6 +1132,9 @@ functions (~define-logger-method~), are handled by Scheme macros that expand
 natively at compile-time.
 
 ** Efficient Context Management
+:PROPERTIES:
+:CUSTOM_ID: efficient-context-management
+:END:
 
 Attaching metadata via ~with-log-context~ and ~with-log-tags~ does not mutate
 global state or require expensive thread-locking or mutexes or anything like
@@ -950,6 +1148,9 @@ contain a tag — not even needing log levels — allowing more fine-grained
 control.
 
 * My Excuses & Good Logging from Day One
+:PROPERTIES:
+:CUSTOM_ID: my-excuses-good-logging-from-day-one
+:END:
 
 I'm sure you've felt this: when starting a new project, setting up a /proper/
 logging framework feels like an unnecessary chore.
@@ -988,8 +1189,14 @@ With Scriba, you have fewer excuses to procrastinate:
 Start with Scriba on day one ✨
 
 * Development
+:PROPERTIES:
+:CUSTOM_ID: development
+:END:
 
 ** Repository layout
+:PROPERTIES:
+:CUSTOM_ID: repository-layout
+:END:
 
 #+begin_example
 scriba/
@@ -1012,22 +1219,28 @@ scriba/
 #+end_example
 
 ** Tasks
+:PROPERTIES:
+:CUSTOM_ID: tasks
+:END:
 
 Everything developer-facing goes through [[https://codeberg.org/jjba23/maak][maak]] (and therefore through the
 pinned Guix environment in ~channels.scm~ + ~manifest.scm~):
 
-| Task            | What it does                                                  |
-|-----------------+---------------------------------------------------------------|
-| ~maak test~       | Run every unit spec with Veritas                              |
-| ~maak bench~      | Run the benchmarks under ~statprof~                            |
-| ~maak fmt~        | Format every ~.scm~ file with ~guix style~                      |
-| ~maak docs~       | Generate HTML API documentation into ~doc/~                    |
-| ~maak deploy~     | Build the docs and publish them to the web directory          |
-| ~maak repl~       | Start an nREPL server (with ~src/~ on the load path) for editors |
-| ~maak dev~        | Watch the tree and re-run the tests on change                 |
-| ~maak~            | List all tasks                                                |
+| Task          | What it does                                                     |
+|---------------+------------------------------------------------------------------|
+| ~maak test~   | Run every unit spec with Veritas                                 |
+| ~maak bench~  | Run the benchmarks under ~statprof~                              |
+| ~maak fmt~    | Format every ~.scm~ file with ~guix style~                       |
+| ~maak docs~   | Generate HTML API documentation into ~doc/~                      |
+| ~maak deploy~ | Build the docs and publish them to the web directory             |
+| ~maak repl~   | Start an nREPL server (with ~src/~ on the load path) for editors |
+| ~maak dev~    | Watch the tree and re-run the tests on change                    |
+| ~maak~        | List all tasks                                                   |
 
 ** Tests
+:PROPERTIES:
+:CUSTOM_ID: tests
+:END:
 
 The suite is written with [[https://codeberg.org/jjba23/veritas][Veritas]]: nine spec files, 91 tests and 144
 assertions, covering the severity matrix, tag and context filters, layout
@@ -1049,14 +1262,20 @@ Failures are rerun-friendly: Veritas writes the failing tasks to
 ~reports/last-failed.scm~, and the process exits non-zero when anything fails.
 
 ** Benchmarks
+:PROPERTIES:
+:CUSTOM_ID: benchmarks-2
+:END:
 
 #+begin_src shell
 maak bench
 #+end_src
 
-See [[*Benchmarks][Benchmarks]] above for what the numbers mean and how to read the report.
+See [[#benchmarks][Benchmarks]] above for what the numbers mean and how to read the report.
 
 ** API documentation
+:PROPERTIES:
+:CUSTOM_ID: api-documentation
+:END:
 
 #+begin_src shell
 maak docs      # writes doc/api/
@@ -1066,6 +1285,9 @@ Documentation generation uses [[https://codeberg.org/luis-felipe/guile-documenta
 lives at [[https://jointhefreeworld.org/api-docs/scriba/API.html][jointhefreeworld.org/api-docs/scriba]].
 
 ** Continuous integration
+:PROPERTIES:
+:CUSTOM_ID: continuous-integration
+:END:
 
 Pushes are built by a Woodpecker pipeline (~.woodpecker/byggsteg.yaml~) that
 hands the job to [[https://byggsteg.jointhefreeworld.org][Byggsteg]], which runs ~maak test~ and ~maak deploy~ inside
@@ -1073,6 +1295,9 @@ the same pinned Guix environment you use locally. Reproducibility is the point:
 CI and your machine agree because they resolve the same channel commit.
 
 * Contributing
+:PROPERTIES:
+:CUSTOM_ID: contributing
+:END:
 
 Contributing to free software is a uniquely beautiful act, because it embodies
 principles of generosity, collaboration, and empowerment.
@@ -1083,6 +1308,9 @@ modular or flexible. Feel free to contact me at <jjbigorra@gmail.com> to chat,
 discuss, or report feedback.
 
 ** Ways to help
+:PROPERTIES:
+:CUSTOM_ID: ways-to-help
+:END:
 
 - *Report a bug.* Open an issue on [[https://codeberg.org/jjba23/scriba/issues][Codeberg]]. A minimal reproduction, your
   Guile version (~guile --version~), and any relevant ~SCRIBA_*~ variables make
@@ -1092,11 +1320,14 @@ discuss, or report feedback.
 - *Improve the docs.* The README, the docstrings and the API docs are all fair
   game, and typos are still bugs.
 - *Write a backend.* A backend is a few dozen lines (see
-  [[*Bring your own backend][Bring your own backend]]); if it is generally useful, we would love to
+  [[#bring-your-own-backend][Bring your own backend]]); if it is generally useful, we would love to
   ship it.
 - *Triage.* Reproducing other people's reports is genuinely helpful work.
 
 ** Sending a patch
+:PROPERTIES:
+:CUSTOM_ID: sending-a-patch
+:END:
 
 1. Fork [[https://codeberg.org/jjba23/scriba][the repository]] and create a branch.
 2. Add or update tests next to the change — [[file:test/veritas/unit/][test/veritas/unit]] is the place
@@ -1113,6 +1344,9 @@ Not sure where to start? The backlog and kanban boards live at
 there is no such thing as a silly question.
 
 * Code of Conduct
+:PROPERTIES:
+:CUSTOM_ID: code-of-conduct
+:END:
 
 This project adheres to the jointhefreeworld code of conduct. Find it here:
 
@@ -1125,6 +1359,9 @@ guiding principles. We believe that collaboration in a community of mutual
 respect is essential to creating excellent free software.
 
 * AI Policy
+:PROPERTIES:
+:CUSTOM_ID: ai-policy
+:END:
 
 This project adheres to the
 [[https://jointhefreeworld.org/blog/articles/personal/jointhefreeworld-ai-policy/index.html][jointhefreeworld AI (Artificial Intelligence) policy]].
@@ -1141,6 +1378,9 @@ agents to automatically generate and submit pull requests to this project is
 strictly prohibited.
 
 * Licensing
+:PROPERTIES:
+:CUSTOM_ID: licensing
+:END:
 
 Scriba and all of its source code are free software, licensed under the
 *GNU Lesser General Public License v3* (or newer, at your convenience).
@@ -1154,6 +1394,9 @@ convenience).
 https://www.gnu.org/licenses/fdl-1.3.html
 
 * On Reproducibility: Why GNU Guix?
+:PROPERTIES:
+:CUSTOM_ID: on-reproducibility-why-gnu-guix
+:END:
 
 A build should never fail because "it worked on my machine". Reliable software
 development requires explicit, bit-for-bit reproducibility and a functional
@@ -1177,11 +1420,17 @@ approach to package management and system deployment.
   package builds, and full system configurations.
 
 * Support the project
+:PROPERTIES:
+:CUSTOM_ID: support-the-project
+:END:
 
 If you like my work, please support me by
 [[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with a lot of motivation.
 
 * Credits
+:PROPERTIES:
+:CUSTOM_ID: credits
+:END:
 
 Scriba stands on the shoulders of excellent free software:
 
