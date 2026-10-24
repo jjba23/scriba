@@ -17,7 +17,12 @@
 
 (define-module (maak)
   #:declarative? #t
-  #:use-module (maak maak))
+  #:use-module (maak maak)
+  ;; The container helpers are imported under a prefix because the
+  ;; tasks below are named the way maak exposes them on the command
+  ;; line -- `maak container-build' -- and a task may not shadow the
+  ;; helper it calls.
+  #:use-module ((maak container) #:prefix ct:))
 
 ;; ====== Maak file constants ======
 
@@ -40,7 +45,9 @@
 
 (define (fmt)
   "Format Scheme source code files according to the Guix style guide."
-  ($ '("find . -maxdepth 8 -name '*.scm'" "-type f -exec guix style -f {} \\;")))
+  (run (list "find" "." "-maxdepth" "8" "-name" "*.scm" "-type" "f"
+             "-exec" "guix" "style" "-f" "{}" ";")
+       #:verbose? #t))
 
 (define (repl)
   "Development REPL."
@@ -98,17 +105,17 @@
 
 (define (default)
   "Default task to be run, list available tasks."
-  ($ '("maak --list")))
+  (list-tasks))
 
 ;; ====== Container tasks ======
 
 (define (container-build)
   "Build the container image for scriba."
-  ($ '("podman build -t scriba .")))
+  (ct:container-build "." #:tag "scriba:latest" #:verbose? #t))
 
 (define (container-run)
   "Run the container image for scriba."
-  ($ '("podman run --rm -it scriba:latest")))
+  (ct:container-run "scriba" #:interactive? #t #:tty? #t #:verbose? #t))
 
 (define (package-docker)
   "Build the container image for scriba."
