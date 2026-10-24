@@ -166,7 +166,7 @@ guix shell -m manifest.scm -- guile my-program.scm
 #+end_src
 
 #+begin_quote
-*Version note:* this tree is release *v0.4.1*, a maintenance release whose
+*Version note:* this tree is release *v0.4.2*, a maintenance release whose
 sources are identical to *v0.4.0* -- the release that added the rotating *file*
 backend, the shared ~(scriba layout)~ module and new test and benchmark suites.
 No API, behaviour or documentation changed between the two tags; see

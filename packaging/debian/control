@@ -1,0 +1,28 @@
+Source: scriba
+Section: lisp
+Priority: optional
+Maintainer: Josep Bigorra <jjbigorra@gmail.com>
+Build-Depends:
+ debhelper-compat (= 13),
+ guile-3.0,
+ guile-3.0-dev,
+ pkg-config,
+ guile-json
+Standards-Version: 4.6.2
+Homepage: https://codeberg.org/jjba23/scriba
+Vcs-Git: https://codeberg.org/jjba23/scriba.git
+Vcs-Browser: https://codeberg.org/jjba23/scriba
+Rules-Requires-Root: no
+
+Package: scriba
+Architecture: any
+Depends:
+ ${misc:Depends},
+ ${shlibs:Depends},
+ guile-3.0,
+ guile-json
+Description: Structured logging framework for Guile Scheme
+ Scriba is a structured logging framework for Guile: log routing, formatting
+ and filtering, JSON logs for production, plain text and rotating files, an
+ auto-logger configured from the environment and dynamically scoped log
+ contexts.

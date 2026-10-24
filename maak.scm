@@ -99,3 +99,17 @@
 (define (default)
   "Default task to be run, list available tasks."
   ($ '("maak --list")))
+
+;; ====== Container tasks ======
+
+(define (container-build)
+  "Build the container image for scriba."
+  ($ '("podman build -t scriba .")))
+
+(define (container-run)
+  "Run the container image for scriba."
+  ($ '("podman run --rm -it scriba:latest")))
+
+(define (package-docker)
+  "Build the container image for scriba."
+  (container-build))
