@@ -116,35 +116,35 @@
 
 (define log-level-suite
   (suite "Severity Threshold Hierarchy Validation"
-         (apply test "Log Level Precedence Visibility Matrix"
-                (map (lambda (case-record)
-                       (let ((target-level (car case-record))
-                             (configured-context (cadr case-record))
-                             (should-allow? (caddr case-record)))
-                         (if should-allow?
-                             (assert-true (is-in-log-level? target-level
-                                           configured-context)
-                                          #:name (format #f
-                                                  "Permit: [~a] visibility should be active inside a [~a] logging threshold"
-                                                  target-level
-                                                  configured-context))
-                             (assert-false (is-in-log-level? target-level
-                                            configured-context)
-                                           #:name (format #f
-                                                   "Suppress: [~a] visibility should be discarded inside a [~a] logging threshold"
-                                                   target-level
-                                                   configured-context)))))
-                     '((trace trace #t)
-                       (trace debug #f)
-                       (debug critical #f)
-                       (info trace #t)
-                       (info error #f)
-                       (success info #t)
-                       (warning trace #t)
-                       (warning debug #t)
-                       (critical info #t)
-                       (error warning #t)
-                       (error error #t))))))
+         (test "Log Level Precedence Visibility Matrix"
+               (for-each (lambda (case-record)
+                           (let ((target-level (car case-record))
+                                 (configured-context (cadr case-record))
+                                 (should-allow? (caddr case-record)))
+                             (if should-allow?
+                                 (assert-true (is-in-log-level? target-level
+                                               configured-context)
+                                              #:name (format #f
+                                                      "Permit: [~a] visibility should be active inside a [~a] logging threshold"
+                                                      target-level
+                                                      configured-context))
+                                 (assert-false (is-in-log-level? target-level
+                                                configured-context)
+                                               #:name (format #f
+                                                       "Suppress: [~a] visibility should be discarded inside a [~a] logging threshold"
+                                                       target-level
+                                                       configured-context)))))
+                           '((trace trace #t)
+                             (trace debug #f)
+                             (debug critical #f)
+                             (info trace #t)
+                             (info error #f)
+                             (success info #t)
+                             (warning trace #t)
+                             (warning debug #t)
+                             (critical info #t)
+                             (error warning #t)
+                             (error error #t))))))
 
 (define (spec)
   (veritas-run log-suite log-level-suite))
