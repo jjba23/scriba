@@ -1,3 +1,10 @@
+scriba (0.4.5-1) unstable; urgency=medium
+
+  * Fix the log-level test suite, which no longer compiled.
+  * Catch the packaging up with 0.4.5.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Mon, 26 Oct 2026 13:20:00 +0100
+
 scriba (0.4.2-1) unstable; urgency=medium
 
   * Bump version for container and GNU/Linux packaging improvements.

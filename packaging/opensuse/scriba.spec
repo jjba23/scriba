@@ -20,7 +20,7 @@
 %global debug_package %{nil}
 
 Name:           scriba
-Version:        0.4.4
+Version:        0.4.5
 Release:        0
 Summary:        Structured logging framework for Guile Scheme
 License:        LGPL-3.0-or-later
@@ -64,8 +64,8 @@ find "$SITE_DIR/scriba" -name '*.scm' | while read -r scm_file; do
   guild compile -L "$SITE_DIR" -o "$go_file" "$scm_file"
 done
 
-# Upstream's log-level suite calls (apply test ...), which Veritas's test macro cannot expand; the suite is not run.
-# %check omitted.
+# Upstream's suites need Veritas, which is not packaged here, so there is no
+# %check: the sources are byte-compiled above and that is the whole build.
 
 %files
 %license COPYING

@@ -17,7 +17,7 @@
 
 # Maintainer: Josep Bigorra <jjbigorra@gmail.com>
 pkgname=scriba
-pkgver=0.4.2
+pkgver=0.4.5
 pkgrel=1
 pkgdesc="Structured logging framework for Guile Scheme"
 arch=('any')
@@ -66,8 +66,8 @@ build() {
   done < <(find src/scriba -name '*.scm')
 }
 
-# Upstream's log-level suite calls (apply test ...), which Veritas's test macro cannot expand; the suite is not run.
-# check() omitted.
+# Upstream's suites need Veritas, which Arch does not package, so there is no
+# check(): the sources are byte-compiled above and that is the whole build.
 
 package() {
   cd "$srcdir/scriba"

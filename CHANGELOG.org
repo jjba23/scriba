@@ -7,6 +7,25 @@ Notable changes to Scriba, newest first. Titles are git tags
 ([[https://codeberg.org/jjba23/scriba/tags][codeberg.org/jjba23/scriba/tags]]); releases before 0.4.0 predate this file,
 so their commit log and tag message are the record.
 
+* 0.4.5 — 2026-10-26
+
+A maintenance release.  The log-level suite is built where Veritas can see it
+again, and the packaging catches up with the release this tree actually is.
+
+** Fixed
+
+- The severity matrix in ~test/veritas/unit/log-spec.scm~ called ~(apply test
+  ...)~, which Veritas cannot expand: ~test~ is a macro, so the file failed to
+  compile with "source expression failed to match any pattern in form test" and
+  took the whole test run down with it.  The cases are now built inside the test
+  body, where Veritas collects them, so the eleven level-precedence checks run
+  again.
+
+** Changed
+
+- The Arch recipe no longer carries the comment that the log-level suite is
+  skipped; the suite runs.
+
 * 0.4.1 — 2026-10-22
 
 A maintenance release.  The sources are identical to =0.4.0=, which is where the
