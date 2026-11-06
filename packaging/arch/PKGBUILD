@@ -23,7 +23,7 @@ pkgver=0.5.1
 pkgrel=1
 pkgdesc="Structured logging framework for Guile Scheme"
 arch=('any')
-url="https://codeberg.org/jjba23/scriba"
+url="https://github.com/jjba23/scriba"
 license=('MIT')
 
 depends=(
@@ -36,8 +36,8 @@ makedepends=(
   'pkgconf'
 )
 
-source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
-sha256sums=('513809213258c9e61c92b2400c4580bd667103094a1eb5fd59b3efd9d997ee8b')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('95f6b282663c858bf9a797eb02012db410d1b5ccb87ae35bdad8fabaed1070ad')
 
 # Guile looks for byte-compiled modules under the site-ccache directory,
 # which differs between distributions, so ask Guile's pkg-config file
@@ -53,7 +53,7 @@ _compiled_dir() {
 }
 
 build() {
-  cd "$srcdir/scriba"
+  cd "$srcdir/$pkgname-$pkgver"
 
   # Byte-compile every module, mirroring the source tree under a staging
   # directory that package() copies into the compiled site directory.
@@ -72,7 +72,7 @@ build() {
 # check(): the sources are byte-compiled above and that is the whole build.
 
 package() {
-  cd "$srcdir/scriba"
+  cd "$srcdir/$pkgname-$pkgver"
 
 
   site_dir="$(_site_dir)"
