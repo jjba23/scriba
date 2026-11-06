@@ -12,6 +12,8 @@
 
 *A structured logging framework for GNU Guile Scheme.*
 
+* ⚠️ THIS REPOSITORY WAS ARCHIVED HERE AND MOVED TO GITHUB, GO TO: https://github.com/jjba23/scriba ⚠️
+
 Scriba turns scattered ~display~ calls into real log lines: levelled, taggable,
 carrying structured context, and routable to a console, a rotating file, syslog
 or JSON — without touching your application code when you move from your laptop
