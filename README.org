@@ -5,7 +5,7 @@
 #+options: toc:nil
 
 [[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]] [[https://jointhefreeworld.org/ggg/dist/gnu-guix.svg]]
-[[https://jointhefreeworld.org/ggg/dist/license-lgpl3+.svg]]    [[https://jointhefreeworld.org/ggg/dist/license-fdl13+.svg]]
+[[https://jointhefreeworld.org/ggg/dist/license-mit.svg]]
 
 #+attr_html: :width 160 :alt Scriba logo
 [[file:logo.svg]]
@@ -95,7 +95,7 @@ Available loggers: ~console~, ~color-console~, ~json~, ~syslog~ and ~file~.
 :CUSTOM_ID: ways-to-install
 :END:
 
-/Four routes to the same 0.4.5, from the most automated to the most manual.  They all build the tag this README documents./
+/Four routes to the same 0.5.0, from the most automated to the most manual.  They all build the tag this README documents./
 
 ** From the Guix channel
 :PROPERTIES:
@@ -103,7 +103,7 @@ Available loggers: ~console~, ~color-console~, ~json~, ~syslog~ and ~file~.
 :END:
 *GNU Guix* is the functional package manager this project is developed with: a build is a pure function of its inputs, so the same recipe gives the same result everywhere, and an upgrade that goes wrong can be rolled back.
 
-The jointhefreeworld channel carries ~guile-scriba~ at 0.4.5, so a checkout of the channel is enough — no package definition to write:
+The jointhefreeworld channel carries ~guile-scriba~ at 0.5.0, so a checkout of the channel is enough — no package definition to write:
 
 #+begin_src shell
 git clone https://codeberg.org/jjba23/guix-jointhefreeworld.git
@@ -267,12 +267,9 @@ guix shell -m manifest.scm -- guile my-program.scm
 #+end_src
 
 #+begin_quote
-*Version note:* this tree is release *v0.4.5*, a maintenance release.  Since
-*v0.4.0* -- the release that added the rotating *file* backend, the shared
-~(scriba layout)~ module and the new test and benchmark suites -- the only
-source change is the log-level suite in the tests, which had stopped compiling
-and runs again here.  No API, behaviour or documentation of the library changed;
-see [[file:CHANGELOG.org][CHANGELOG.org]] for what each release contains.
+*Version note:* this tree is release *v0.5.0*, which moves the project to the
+MIT license.  No API or behaviour changed; see [[file:CHANGELOG.org][CHANGELOG.org]] for what each
+release contains.
 #+end_quote
 
 ** From this repository (latest code)
@@ -337,7 +334,7 @@ If you prefer a package definition of your own, adapt the one in ~guix.scm~:
      "Scriba is a structured logging library for GNU Guile that prioritizes
 flexibility and observability.")
     (home-page "https://codeberg.org/jjba23/scriba")
-    (license license:lgpl3+)))
+    (license license:expat)))
 #+end_src
 
 * Requirements
@@ -1380,16 +1377,9 @@ We require a human in the loop for all contributions.
 :CUSTOM_ID: licensing
 :END:
 
-Scriba and all of its source code are free software, licensed under the
-*GNU Lesser General Public License v3* (or newer, at your convenience).
-
-https://www.gnu.org/licenses/lgpl-3.0.html
-
-The documentation and examples provided with Scriba, including this document,
-are licensed under the *GNU Free Documentation License v1.3* (or newer, at your
-convenience).
-
-https://www.gnu.org/licenses/fdl-1.3.html
+Scriba and all of its source code are free software, licensed under the *MIT License*.  The documentation and
+examples provided with Scriba, including this document, are covered by the same
+license; see the file LICENSE for the full text.
 
 * On Reproducibility: Why GNU Guix?
 :PROPERTIES:

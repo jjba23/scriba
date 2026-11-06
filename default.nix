@@ -2,18 +2,20 @@
 
 # Copyright © Josep Bigorra <jjbigorra@gmail.com>
 
-# scriba is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# scriba is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-
-# You should have received a copy of the GNU Lesser General Public License
-# along with scriba.  If not, see <https://www.gnu.org/licenses/>.
+# scriba is released under the MIT License.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.  See the
+# LICENSE file for the full text.
 
 # The package of this checkout as it stands.  It is the same derivation as the
 # `guile-scriba' package in nixpkgs -- same phases, same layout under $out -- so
@@ -30,7 +32,7 @@
 
 stdenv.mkDerivation {
   pname = "guile-scriba";
-  version = "0.4.5";
+  version = "0.5.0";
 
   src = ./.;
 
@@ -66,7 +68,7 @@ stdenv.mkDerivation {
   meta = with lib; {
     description = "Structured logging framework for GNU Guile";
     homepage = "https://codeberg.org/jjba23/scriba";
-    license = licenses.lgpl3Plus;
+    license = licenses.mit;
     platforms = guile.meta.platforms;
   };
 }

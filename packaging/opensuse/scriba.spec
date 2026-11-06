@@ -20,10 +20,10 @@
 %global debug_package %{nil}
 
 Name:           scriba
-Version:        0.4.5
+Version:        0.5.0
 Release:        0
 Summary:        Structured logging framework for Guile Scheme
-License:        LGPL-3.0-or-later
+License:        MIT
 URL:            https://codeberg.org/jjba23/scriba
 Source0:        %{name}-%{version}.tar.gz
 BuildRequires:  pkgconfig(guile-3.0)
@@ -68,7 +68,7 @@ done
 # %check: the sources are byte-compiled above and that is the whole build.
 
 %files
-%license COPYING
+%license LICENSE
 %doc README.org
 %dir %{_datadir}/guile
 %dir %{_datadir}/guile/site
