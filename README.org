@@ -133,7 +133,3 @@ Scriba stands on the shoulders of excellent free software:
 - [[https://github.com/aconchillo/guile-json][guile-json]] — JSON serialisation for the JSON backend.
 - [[https://codeberg.org/jjba23/veritas][Veritas]] — the test and benchmark runner used by this project.
 - [[https://guix.gnu.org/][GNU Guix]] — reproducible development environments and packaging.
-
-#+ATTR_HTML: :width 160 :alt The Scriba logo
-#+ATTR_LATEX: :center t
-[[https://jointhefreeworld.org/static-assets/scriba/scriba_small.png]]
