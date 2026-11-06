@@ -1,0 +1,156 @@
+#+title: scriba — Performance
+#+author: Josep Bigorra
+#+email: jjbigorra@gmail.com
+#+language: en
+#+options: toc:2
+
+* Performance Under the Hood
+:PROPERTIES:
+:CUSTOM_ID: performance-under-the-hood
+:END:
+
+Logging is a global cross-cutting concern, and it should never become the
+bottleneck in your application's execution.
+
+Scriba achieves high throughput by front-loading as much computation as
+possible, using the macro system, and leveraging Guile's native optimizations.
+
+** Constructor Memoization
+:PROPERTIES:
+:CUSTOM_ID: constructor-memoization
+:END:
+
+Creating and configuring loggers can involve reading environments, parsing
+strings, and allocating records.
+
+Scriba exposes a ~memoize-logger~ macro that wraps logger factories with a
+hash-table cache. If you request a logger with the exact same configuration
+parameters anywhere in your codebase, Scriba instantly returns the cached
+instance instead of rebuilding it.
+
+Defaults derived from dynamically scoped parameters are evaluated and folded
+into the cache key on every lookup, so
+~(parameterize ((default-out-port port)) (scriba-console-logger))~ produces a
+distinct logger per port instead of reusing a stale one. Environment-driven
+auto-loggers work the same way: changing a ~SCRIBA_*~ variable yields a freshly
+configured logger. If you need a brand new instance regardless of caching, call
+the raw factory (e.g. ~%make-scriba-console-logger~) directly.
+
+** Ahead-of-Time Level Filtering
+:PROPERTIES:
+:CUSTOM_ID: ahead-of-time-level-filtering
+:END:
+
+Instead of checking the log severity level on every single ~log-*~ invocation,
+Scriba evaluates the hierarchy exactly once when the logger is instantiated.
+
+- Scriba permanently binds that logger's irrelevant functions to a
+  lightning-fast no-op when they are below the level threshold.
+- This means calling a disabled log level entirely bypasses string formatting,
+  port flushing, and I/O routing ✨
+
+~#:level #f~ is the "never log" setting: it mutes every statement, including
+~log-message~. ~#:level #t~ is the opposite, "always log": every severity
+passes the threshold.
+
+** Cheap Lines When a Line Is Emitted
+:PROPERTIES:
+:CUSTOM_ID: cheap-lines-when-a-line-is-emitted
+:END:
+
+Profiling the enabled path paid off too, and the benchmark below is what keeps
+those gains honest:
+
+- Timestamps are formatted once per second per format string, because
+  ~localtime~ and ~strftime~ consult the timezone database and dominate the
+  cost of a short log line.
+- A message with no arguments is not passed through the formatter at all; the
+  string is emitted as is. A lone message containing ~~~ is therefore literal
+  rather than a (likely invalid) format directive.
+- Lines are written with ~display~ and ~newline~ rather than ~format~, and
+  field building uses ~string-append~ instead of format directives.
+
+** Benchmarks
+:PROPERTIES:
+:CUSTOM_ID: benchmarks
+:END:
+
+The benchmarks live where the tests live, in
+[[file:../test/veritas/bench/logging-bench-spec.scm][test/veritas/bench/logging-bench-spec.scm]], and are driven by the same Veritas
+runner, so the project has one harness and one report format instead of two.
+
+#+begin_src shell
+maak bench                                          # or:
+VERITAS_TEST_TYPE=bench guile -L ./src -L ./test \
+  -c '((@ (veritas runner) run-tests))'
+#+end_src
+
+Each ~benchmark~ form runs its thunk ~#:runs 3~ times under Guile's ~statprof~,
+so the report is a profile per run: it says where the time went, not just how
+much. Every workload repeats its operation a fixed number of times, and that
+count is part of the benchmark name, so dividing the reported total by it gives
+the cost per call. Every destination is ~/dev/null~. The first benchmark is an
+empty loop at the same call count, which is the baseline the muted figures are
+measured against.
+
+Typical output on an ordinary laptop, with the median of the three runs and the
+share of that total spent in the garbage collector:
+
+#+begin_src
+workload                              calls   total     GC    ns/call    vs no-op
+no-op thunk                         4000000  0.0146s   0.0%        3.6       1.00x
+muted log-debug (level info)        4000000  0.4629s  80.0%      115.7      31.75x
+muted log-info (level #f)           4000000  0.4683s  79.3%      117.1      32.12x
+tag filter miss (log-info)          2000000  0.5767s  75.9%      288.4      79.10x
+context filter miss (log-info)      2000000  0.8209s  74.7%      410.5     112.59x
+console INFO (literal message)       100000  0.3162s  55.6%     3162.5     867.50x
+console INFO (2 format args)          20000  0.5999s  85.5%    29996.8    8228.42x
+console INFO, flush disabled          20000  0.5971s  88.0%    29854.7    8189.44x
+JSON INFO -> /dev/null                12000  0.6675s  68.3%    55624.8   15258.42x
+file INFO -> /dev/null                20000  0.6071s  85.1%    30354.6    8326.56x
+console INFO with tags + context      12000  0.8130s  89.1%    67749.7   18584.39x
+memoized logger lookup               150000  0.6901s  84.4%     4601.0    1262.09x
+raw logger construction                8000  1.1454s  91.1%   143177.2   39274.90x
+#+end_src
+
+Muted statements cost a little over a hundred nanoseconds, of which the call
+itself is a small part: an empty loop at the same count takes 3.6 ns a turn.
+Disabled backends never format, and an emitted literal line costs about three
+microseconds. The formatter dominates any line that carries arguments, which is
+why a literal message skips it.
+
+Measured as an A/B inside one process with a plain CPU timer, a timestamped
+literal line went from ~27 µs with the old format-based path to ~2.6 µs with the
+current one; the totals above read a bit higher than that because ~statprof~
+samples the run and its GC time is part of the total. The exact figures depend
+on your hardware and its load, so treat them as orders of magnitude rather than
+contracts.
+
+** Compile-Time Macros
+:PROPERTIES:
+:CUSTOM_ID: compile-time-macros
+:END:
+
+A great deal of effort is taken to keep runtime overhead strictly minimal, and
+Scriba avoids doing much dynamic dispatch or runtime reflection.
+
+Some boilerplate operations, such as generating keyword-based record
+constructors (~define-record-with-kw~) and generating the domain logging
+functions (~define-logger-method~), are handled by Scheme macros that expand
+natively at compile-time.
+
+** Efficient Context Management
+:PROPERTIES:
+:CUSTOM_ID: efficient-context-management
+:END:
+
+Attaching metadata via ~with-log-context~ and ~with-log-tags~ does not mutate
+global state or require expensive thread-locking or mutexes or anything like
+that.
+
+It relies on Guile's native ~parameterize~, which securely and efficiently
+handles dynamically scoped, thread-local variables.
+
+Log tags can be filtered on at runtime, so you can log exclusively lines that
+contain a tag — not even needing log levels — allowing more fine-grained
+control.

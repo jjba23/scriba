@@ -7,6 +7,16 @@ Notable changes to Scriba, newest first. Titles are git tags
 ([[https://codeberg.org/jjba23/scriba/tags][codeberg.org/jjba23/scriba/tags]]); releases before 0.4.0 predate this file,
 so their commit log and tag message are the record.
 
+* Unreleased
+
+** Changed
+
+- The README is now an overview; the guide lives in ~docs/~ (installation, quick
+  start, usage, configuration, performance, why Scriba, development,
+  contributing), and the packages install those pages too.
+- CI moved from Woodpecker to GitHub Actions (~.github/workflows/ci.yml~), which
+  calls the shared Byggsteg workflow with ~maak-test maak-deploy~.
+
 * 0.5.0 — 2026-11-06
 
 The project is now licensed under the MIT License instead of the LGPL-3.0-or-later

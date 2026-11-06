@@ -1,0 +1,114 @@
+#+title: scriba — Development
+#+author: Josep Bigorra
+#+email: jjbigorra@gmail.com
+#+language: en
+#+options: toc:2
+
+* Development
+:PROPERTIES:
+:CUSTOM_ID: development
+:END:
+
+** Repository layout
+:PROPERTIES:
+:CUSTOM_ID: repository-layout
+:END:
+
+#+begin_example
+scriba/
+├── src/scriba/        the library
+│   ├── scriba.scm     core: records, levels, filters, context, memoization
+│   ├── layout.scm     shared text formatting (timestamps, tags, context)
+│   ├── console.scm    plaintext console backend
+│   ├── color-console.scm  ANSI-coloured console backend
+│   ├── json.scm       JSON backend
+│   ├── syslog.scm     RFC 5424-shaped syslog backend
+│   ├── file.scm       rotating file backend
+│   └── auto.scm       environment-driven auto-logger
+├── test/veritas/unit/ unit specs (Veritas)
+├── test/veritas/bench/ benchmarks (Veritas)
+├── CHANGELOG.org      release notes
+├── channels.scm       pinned Guix revision
+├── manifest.scm       development environment
+├── guix.scm           package definition for the working tree
+└── maak.scm           developer tasks
+#+end_example
+
+** Tasks
+:PROPERTIES:
+:CUSTOM_ID: tasks
+:END:
+
+Everything developer-facing goes through [[https://codeberg.org/jjba23/maak][maak]] (and therefore through the
+pinned Guix environment in ~channels.scm~ + ~manifest.scm~):
+
+| Task          | What it does                                                     |
+|---------------+------------------------------------------------------------------|
+| ~maak test~   | Run every unit spec with Veritas                                 |
+| ~maak bench~  | Run the benchmarks under ~statprof~                              |
+| ~maak fmt~    | Format every ~.scm~ file with ~guix style~                       |
+| ~maak docs~   | Generate HTML API documentation into ~doc/~                      |
+| ~maak deploy~ | Build the docs and publish them to the web directory             |
+| ~maak repl~   | Start an nREPL server (with ~src/~ on the load path) for editors |
+| ~maak dev~    | Watch the tree and re-run the tests on change                    |
+| ~maak~        | List all tasks                                                   |
+
+** Tests
+:PROPERTIES:
+:CUSTOM_ID: tests
+:END:
+
+The suite is written with [[https://codeberg.org/jjba23/veritas][Veritas]]: nine spec files, 91 tests and 144
+assertions, covering the severity matrix, tag and context filters, layout
+rendering and validation, JSON structure, syslog priorities, ANSI escapes, file
+rotation, UTF-8 byte accounting, environment configuration, auto-logger routing
+and line framing.
+
+#+begin_src shell
+maak test
+#+end_src
+
+Prefer to run Guile directly? The equivalent is:
+
+#+begin_src shell
+guile -L ./src -L ./test -c '((@ (veritas runner) run-tests))'
+#+end_src
+
+Failures are rerun-friendly: Veritas writes the failing tasks to
+~reports/last-failed.scm~, and the process exits non-zero when anything fails.
+
+** Benchmarks
+:PROPERTIES:
+:CUSTOM_ID: benchmarks-2
+:END:
+
+#+begin_src shell
+maak bench
+#+end_src
+
+See [[file:performance.org::#benchmarks][Benchmarks]] above for what the numbers mean and how to read the report.
+
+** API documentation
+:PROPERTIES:
+:CUSTOM_ID: api-documentation
+:END:
+
+#+begin_src shell
+maak docs      # writes doc/api/
+#+end_src
+
+Documentation generation uses [[https://codeberg.org/luis-felipe/guile-documenta][Documenta]] and Texinfo; the published copy
+lives at [[https://jointhefreeworld.org/api-docs/scriba/API.html][jointhefreeworld.org/api-docs/scriba]].
+
+** Continuous integration
+:PROPERTIES:
+:CUSTOM_ID: continuous-integration
+:END:
+
+Every push to ~trunk~ runs the workflow in ~.github/workflows/ci.yml~, which
+hands the job to [[https://byggsteg.jointhefreeworld.org][Byggsteg]] through the shared ~byggsteg-github~ workflow.  Byggsteg
+runs ~maak-test~ and ~maak-deploy~ inside the same pinned Guix environment you
+use locally, and its log is the one that matters.  Reproducibility is the
+point: CI and your machine agree because they resolve the same channel commit.
+The job needs the Byggsteg credentials as repository secrets, which the workflow
+inherits.

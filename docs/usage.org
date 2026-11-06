@@ -1,0 +1,504 @@
+#+title: scriba — Usage
+#+author: Josep Bigorra
+#+email: jjbigorra@gmail.com
+#+language: en
+#+options: toc:2
+
+* Usage
+:PROPERTIES:
+:CUSTOM_ID: usage
+:END:
+
+** The Auto-Configured Logger
+:PROPERTIES:
+:CUSTOM_ID: the-auto-configured-logger
+:END:
+
+While you can instantiate specific loggers manually, the simplest way to get
+started is with the *auto-logger*. It reads environment variables (and, in the
+future, Scheme configuration files) to automatically determine at runtime which
+logger to use and how to configure it.
+
+This is especially useful for maintaining different logging behaviours between
+development and production environments. A common use-case is to use a pretty
+and colourful console logger in local development, and structured JSON logging
+in production, for logs to be parsed and aggregated by tools like Loki.
+
+#+begin_src scheme
+(use-modules (scriba auto)
+             (scriba scriba))
+
+(define log (scriba-auto-logger))
+
+(log-info log "Hello Scriba!")
+(with-log-context '((key-1 . value-1))
+  (log-info log "Message with context"))
+#+end_src
+
+#+begin_quote
+*Note:* logger creation is memoized. Subsequent calls to create the same logger
+(even elsewhere in your codebase) are instant, because the result is only
+computed once.
+#+end_quote
+
+Because the ~get-env-*~ functions act as defaults for the ~#:key~ arguments of
+~%make-scriba-auto-logger~, you can override the environment programmatically
+too: ~(scriba-auto-logger #:level 'trace)~.
+
+** Choosing a Backend
+:PROPERTIES:
+:CUSTOM_ID: choosing-a-backend
+:END:
+
+Each logger supports a shared set of options, with defaults that may differ per
+backend. See [[file:../src/scriba/][src/scriba]] for the full definitions, and the unit tests
+([[file:../test/veritas/unit/log-spec.scm][log-spec.scm]], [[file:../test/veritas/unit/auto-log-spec.scm][auto-log-spec.scm]]) for more elaborate configurations.
+
+Loggers are optionally named entities responsible for emitting logs. They are
+the primary interface between your application and Scriba; instantiate them
+directly when you want full control and do not need the auto-logger.
+
+*** Console logger
+:PROPERTIES:
+:CUSTOM_ID: console-logger
+:END:
+
+Bracketed plaintext — ideal for terminals, sidecars and log files.
+
+#+begin_src scheme
+(use-modules (scriba scriba)
+             (scriba console))
+
+(define log (scriba-console-logger #:name 'app
+                                   #:level 'info
+                                   #:layout '(level time name message context)))
+
+(log-info log "1 + 1 = ~a" (+ 1 1))
+(log-debug log "never printed: below the level")
+(log-message log "This message is always logged, no level involved")
+(log-error log "A critical error occurred")
+#+end_src
+
+#+begin_example
+[INFO] [2026-10-18 17:49:47 CEST] [app] 1 + 1 = 2
+[2026-10-18 17:49:47 CEST] [app] This message is always logged, no level involved
+[ERROR] [2026-10-18 17:49:47 CEST] [app] A critical error occurred
+#+end_example
+
+*** Colour console logger
+:PROPERTIES:
+:CUSTOM_ID: colour-console-logger
+:END:
+
+The same layout, with ANSI colours per level:
+
+#+begin_src scheme
+(use-modules (scriba scriba)
+             (scriba color-console))
+
+(define log (scriba-color-console-logger #:level 'info))
+
+(log-info log "1 + 1 = ~a" (+ 1 1))
+(log-error log "A critical error occurred")
+#+end_src
+
+Levels map to grey (trace), cyan (debug), blue (info), green (success), yellow
+(warning), red (error) and bold red (critical). Emit raw ANSI escapes only when
+the destination is a terminal; for files and pipes prefer the plain console or
+JSON backend.
+
+*** JSON logger
+:PROPERTIES:
+:CUSTOM_ID: json-logger
+:END:
+
+One JSON object per line, ready for Loki, Elasticsearch, Datadog, or ~jq~.
+
+#+begin_src scheme
+(use-modules (scriba scriba)
+             (scriba json))
+
+(define log (scriba-json-logger #:level 'info
+                                #:layout '(level time host message context)))
+
+(with-log-context '((request-id . "req-1234"))
+  (log-info log "Hello Scriba!"))
+#+end_src
+
+#+begin_example
+{"level":"INFO","time":"2026-10-18 17:49:47 CEST","host":"thinkpad","message":"Hello Scriba!","request-id":"req-1234"}
+#+end_example
+
+Context entries are inlined as top-level keys, tags become an array
+(~"tags":["db"]~), and ~#:pretty? #t~ switches to indented output for humans:
+
+#+begin_example
+{
+  "level": "WARNING",
+  "message": "Something suspicious happened"
+}
+#+end_example
+
+*** Syslog logger
+:PROPERTIES:
+:CUSTOM_ID: syslog-logger
+:END:
+
+RFC 5424-shaped framing:
+
+#+begin_example
+<PRI>VERSION TIMESTAMP HOST APP-NAME PROCID MSGID STRUCTURED-DATA MSG
+#+end_example
+
+The facility is ~user~ (1) and the version is 2, so the priority is
+~8 + severity~ — ~14~ for info, ~12~ for warning.
+
+#+begin_src scheme
+(use-modules (scriba scriba)
+             (scriba syslog))
+
+(define log (scriba-syslog-logger #:level 'info))
+
+(log-info log "2 + 2 = ~a" (+ 2 2))
+(with-log-context '((tenant . "acme"))
+  (log-warning log "Something suspicious happened"))
+#+end_src
+
+#+begin_example
+<14>2 2026-10-18T17:49:47+0200 thinkpad 49817 - 2 + 2 = 4
+<12>2 2026-10-18T17:49:47+0200 thinkpad 49817 - [tenant="acme"] Something suspicious happened
+#+end_example
+
+The syslog backend also understands the extra ~process-id~ and ~message-id~
+layout fields.
+
+*** File logger
+:PROPERTIES:
+:CUSTOM_ID: file-logger
+:END:
+
+The file logger appends the same bracketed plaintext layout as the console
+logger, and rotates the file when it grows past ~#:max-size~.
+
+#+begin_src scheme
+(use-modules (scriba scriba)
+             (scriba file))
+
+(define log (scriba-file-logger #:name 'app
+                                #:path "/var/log/my-app.log"
+                                #:level 'info
+                                #:max-size (* 10 1024 1024) ; 10 MiB per file
+                                #:max-backups 5))
+
+(log-info log "2 + 2 = ~a" (+ 2 2))
+#+end_src
+
+How rotation behaves:
+
+- The current file is renamed to ~<path>.1~, older backups shift up, and the
+  backup beyond ~#:max-backups~ is removed. A file therefore never grows past
+  ~#:max-size~ unless a single line is longer than it.
+- ~#:max-size #f~ disables rotation; ~#:max-backups 0~ truncates the file when
+  it fills up instead of keeping history.
+- Rotation happens before the line that would overflow is written, and the
+  size is measured in UTF-8 bytes, so accented text is counted correctly.
+- The parent directory must exist; the log file itself is created on demand.
+- ~(rotate-file! path)~ rotates on demand (say from a ~SIGHUP~ handler), and
+  ~(file-sink-open? path)~ reports whether a sink is currently open.
+- Rotation is a property of the file, not of a logger: loggers that share a
+  path share one open port, and the most recently requested policy applies.
+  Several processes appending to the same file is safe, but only one of them
+  should own rotation.
+
+#+begin_example
+# rotate by hand, then keep logging
+(rotate-file! "/var/log/my-app.log")   ; => #t
+(file-sink-open? "/var/log/my-app.log") ; => #t
+#+end_example
+
+Set ~#:flush-port? #f~ (or ~SCRIBA_FLUSH_PORT=false~) to let the port buffer
+lines instead of flushing every message; this trades durability for speed.
+
+*** Example log lines, side by side
+:PROPERTIES:
+:CUSTOM_ID: example-log-lines-side-by-side
+:END:
+
+Console:
+
+#+begin_example
+[INFO] [2026-05-24 11:23:06 CEST] Hello Scriba, 2 + 2 = 4!
+[INFO] [2026-05-24 11:23:06 CEST] [sample-1=value-1] Some log with context
+[2026-06-03 11:56:35 CEST] [#hello #world] Yes! Log with tags! [planet=earth]
+#+end_example
+
+JSON:
+
+#+begin_example
+{"level":"INFO","time":"2026-05-24 11:23:06 CEST","message":"Some log with context","sample-2":"value-2"}
+{"level":"WARNING","time":"2026-05-24 11:23:06 CEST","message":"some kind of warning"}
+{"tags":["performance"],"time":"2026-06-03 11:56:35 CEST","host":"thinkpad","message":"Slept 0 seconds"}
+#+end_example
+
+Syslog:
+
+#+begin_example
+<14>2 2026-05-29T10:56:49+0200 thinkpad 37222 - Hello Scriba!
+<14>2 2026-05-29T10:56:49+0200 thinkpad 37222 - [sample-1="value-1"] Some log with context
+<12>2 2026-05-29T10:56:49+0200 thinkpad 37222 - some kind of warning
+<14>2 2026-06-03T11:59:18+0200 thinkpad 80672 - Not gonna sleep! [#performance #benchmark]
+#+end_example
+
+** Log Levels
+:PROPERTIES:
+:CUSTOM_ID: log-levels
+:END:
+
+For Scriba, log level is an opt-in concept. Not every system benefits from the
+same kind of log filtering. Other approaches, like tag-based or
+property-based logging, are powerful as well.
+
+So you can call ~log-info~, or just call ~log-message~ if you always want to log.
+
+Inside Scriba, log level ~#t~ means *always log*, and ~#f~ means *never log*.
+
+A logging action is executed only if its designated level is at or above the
+effective level of the configured logger:
+
+#+begin_quote
+A log action of level L issued to a logger having an effective level Q is
+enabled if L ≥ Q.
+#+end_quote
+
+The standard hierarchy is:
+
+#+begin_example
+trace < debug < info < success < warning < error < critical
+#+end_example
+
+Logger construction validates the level, so a typo such as ~#:level 'verbose~
+raises an error instead of silently muting every log statement:
+
+#+begin_example
+raised scriba-invalid-log-level: Invalid log level verbose;
+  expected #t, #f or one of (trace debug info success warning error critical)
+#+end_example
+
+~#:level #f~ mutes everything, including ~log-message~; ~#:level #t~ lets
+everything through.
+
+** Log Context
+:PROPERTIES:
+:CUSTOM_ID: log-context
+:END:
+
+For better observability, it is often useful to attach dynamic metadata to your
+log lines. Scriba handles this seamlessly via contexts:
+
+#+begin_src scheme
+(with-log-context '((request-id . "req-1234") (user . "alice"))
+  (log-info log "Fetching database records...")
+  ;; Any deeper function calls that log will automatically include this context!
+  (do-some-work a b c))
+#+end_src
+
+Contexts nest: each ~with-log-context~ appends to the current one for the
+duration of its body, and unwinds automatically — no cleanup, no global state.
+
+You can also filter logs *by* context, with the ~#:context-filter~ constructor
+argument, which accepts an alist. Filtering is lenient (it compares symbols,
+numbers and strings loosely).
+
+#+begin_src scheme
+(define log (scriba-console-logger #:name 'app
+                                   #:level 'info
+                                   ;; only log when this context is present
+                                   #:context-filter '((some-key . "some-value"))))
+
+(with-log-context '((some-key . "some-value"))
+  (log-info log "2 + 2 = ~a" (+ 2 2)))
+#+end_src
+
+** Log Tags
+:PROPERTIES:
+:CUSTOM_ID: log-tags
+:END:
+
+Also known as property-based logging. Any log line can carry tags, which you
+can filter on — with or without levels.
+
+#+begin_example
+[#performance #db] [2026-06-02 21:19:24 CEST] Slept 0 seconds
+[2026-06-02 21:21:40 CEST] [INFO] [#hello #world] Yes! [planet=earth]
+#+end_example
+
+Tags can be added (and nested) just like context, with the ~with-log-tags~
+macro, and filtered with ~#:tag-filter~:
+
+#+begin_src scheme
+(define log (scriba-console-logger #:name 'app
+                                   #:level 'info
+                                   ;; keep only lines carrying one of these tags
+                                   #:tag-filter '(benchmark db performance)))
+
+(with-log-tags '(benchmark db performance)
+  (log-info log "2 + 2 = ~a" (+ 2 2)))
+#+end_src
+
+** Log Routing
+:PROPERTIES:
+:CUSTOM_ID: log-routing
+:END:
+
+In general, the most common use-case for programs is to emit log lines to
+standard output. From there you can capture the output and redirect as needed.
+
+Some applications and users may require more advanced functionality, like
+logging to files, sockets, or network destinations. Scriba offers an easily
+configurable interface to log destinations, thanks to Scheme's excellent
+input/output port system.
+
+By default:
+
+#+begin_src scheme
+(scriba-console-logger #:out-port (current-output-port)) ; stdout, generally
+#+end_src
+
+Logging to a file is a backend of its own, with rotation handled for you (see
+[[#file-logger][File logger]]):
+
+#+begin_src scheme
+(use-modules (scriba scriba)
+             (scriba file))
+
+(define log (scriba-file-logger #:path "test.log"
+                                #:max-size (* 5 1024 1024)
+                                #:max-backups 3))
+
+(log-info log "Hello Scriba!")
+#+end_src
+
+Any other port still works too, for example when a POSIX daemon hands you a
+file descriptor:
+
+#+begin_src scheme
+(let* ((file-port (open-output-file "test.log"))
+       (log (scriba-console-logger #:out-port file-port)))
+  (log-info log "Hello Scriba!")
+  (close-output-port file-port)) ; don't forget to close file ports!
+#+end_src
+
+** Capturing Logs in Tests
+:PROPERTIES:
+:CUSTOM_ID: capturing-logs-in-tests
+:END:
+
+A string port is the easiest way to assert on what your program logs:
+
+#+begin_src scheme
+(let* ((port (open-output-string))
+       (log (scriba-console-logger #:out-port port
+                                   #:layout '(level message))))
+  (log-info log "Hello Scriba!")
+  (get-output-string port))
+;; => "[INFO] Hello Scriba!\n"
+#+end_src
+
+** Line Endings
+:PROPERTIES:
+:CUSTOM_ID: line-endings
+:END:
+
+Log lines are terminated with a trailing newline by default. If your program
+writes prompts or partial lines to the same port, you can prepend the newline
+instead (the historical Scriba behaviour):
+
+#+begin_src scheme
+(scriba-console-logger #:out-port (current-output-port)
+                       #:line-ending 'leading)
+#+end_src
+
+This is also configurable globally via the ~default-line-ending~ parameter, or
+through ~SCRIBA_LINE_ENDING~ with the auto-logger.
+
+** Log Format
+:PROPERTIES:
+:CUSTOM_ID: log-format
+:END:
+
+Customise the log format and disable fields you do not need with ~#:layout~:
+
+#+begin_src scheme
+(define log (scriba-console-logger #:name 'app
+                                   #:level 'info
+                                   #:layout '(level tags time host name
+                                                    context message)))
+(log-info log "2 + 2 = ~a" (+ 2 2))
+#+end_src
+
+The fields a text backend understands are ~level~, ~tags~, ~time~, ~host~,
+~name~, ~context~ and ~message~; the syslog backend adds ~process-id~ and
+~message-id~. Only the fields in the layout are rendered, in that order, and an
+unknown field name is an error rather than a silently empty line. The same
+field lists are available programmatically as ~text-layout-fields~,
+~json-layout-fields~ and ~syslog-layout-fields~.
+
+#+begin_example
+raised scriba-invalid-layout: Unknown log layout field tyme;
+  expected one of (level tags time host name context message)
+#+end_example
+
+With the auto-logger, ~SCRIBA_LOG_LAYOUT~ is comma separated:
+
+#+begin_src shell
+SCRIBA_LOG_LAYOUT=level,time,name,message,context my-app
+#+end_src
+
+** Bring your own backend
+:PROPERTIES:
+:CUSTOM_ID: bring-your-own-backend
+:END:
+
+Every backend is just a formatter plus a port. Reuse the shared pieces — level
+filtering, tag/context filters, argument formatting — and only supply the line
+you want to produce. Here is a complete tab-separated logger:
+
+#+begin_src scheme
+(use-modules (scriba scriba)
+             (scriba layout))
+
+(define* (make-tsv-logger #:key (level (default-log-level))
+                          (out-port (default-out-port)))
+  (define (printer lvl)
+    (lambda (message . args)
+      (format out-port "~a\t~a\t~a~%"
+              (if (symbol? lvl) (symbol->string lvl) "-")
+              (format-plain-time "%Y-%m-%dT%H:%M:%S%z")
+              (format-log-message message args))))
+  (make-filtered-logger #:name 'tsv
+                        #:level level
+                        #:context-filter '()
+                        #:tag-filter '()
+                        #:log-message-proc (printer #t)
+                        #:log-trace-proc (printer 'trace)
+                        #:log-debug-proc (printer 'debug)
+                        #:log-info-proc (printer 'info)
+                        #:log-success-proc (printer 'success)
+                        #:log-warning-proc (printer 'warning)
+                        #:log-error-proc (printer 'error)
+                        #:log-critical-proc (printer 'critical)))
+
+(define log (make-tsv-logger #:level 'info))
+(log-info log "started")
+(log-error log "failed after ~a attempts" 3)
+#+end_src
+
+#+begin_example
+info	2026-10-18T17:49:47+0200	started
+error	2026-10-18T17:49:47+0200	failed after 3 attempts
+#+end_example
+
+Useful building blocks from ~(scriba layout)~: ~format-plain-time~,
+~format-context~, ~format-tags~, ~format-name~, ~make-text-printer~. From
+~(scriba scriba)~: ~make-filtered-logger~, ~format-log-message~,
+~write-log-line~, ~memoize-logger~.

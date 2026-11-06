@@ -1,0 +1,78 @@
+#+title: scriba — Quick Start
+#+author: Josep Bigorra
+#+email: jjbigorra@gmail.com
+#+language: en
+#+options: toc:2
+
+* Quick Start
+:PROPERTIES:
+:CUSTOM_ID: quick-start
+:END:
+
+** 1. Install it
+:PROPERTIES:
+:CUSTOM_ID: 1-install-it
+:END:
+
+With Guix, one command:
+
+#+begin_src shell
+guix install guile-scriba
+#+end_src
+
+Prefer a throwaway environment? ~guix shell guile-scriba guile -- guile your-script.scm~
+works too, without installing anything permanently.
+
+** 2. Write your first log line
+:PROPERTIES:
+:CUSTOM_ID: 2-write-your-first-log-line
+:END:
+
+Save this as ~hello-log.scm~:
+
+#+begin_src scheme
+(use-modules (scriba auto)
+             (scriba scriba))
+
+(define log (scriba-auto-logger))
+
+(log-info log "Hello Scriba, 2 + 2 = ~a" (+ 2 2))
+(with-log-context '((request-id . "req-1234"))
+  (log-warning log "Disk almost full"))
+#+end_src
+
+** 3. Run it
+:PROPERTIES:
+:CUSTOM_ID: 3-run-it
+:END:
+
+#+begin_src shell
+guile hello-log.scm
+#+end_src
+
+#+begin_example
+[INFO] [2026-10-18 17:49:47 CEST] Hello Scriba, 2 + 2 = 4
+[WARNING] [2026-10-18 17:49:47 CEST] Disk almost full [request-id=req-1234]
+#+end_example
+
+That is the whole setup: two imports, one call to ~scriba-auto-logger~, and
+log statements as you need them. No configuration files, no init rituals ✨
+
+** 4. Change everything with one environment variable
+:PROPERTIES:
+:CUSTOM_ID: 4-change-everything-with-one-environment-variable
+:END:
+
+The same program, unchanged, becomes structured JSON for your log shipper:
+
+#+begin_src shell
+SCRIBA_LOGGER=json SCRIBA_LOG_LAYOUT=level,message,context guile hello-log.scm
+#+end_src
+
+#+begin_example
+{"level":"INFO","message":"Hello Scriba, 2 + 2 = 4"}
+{"level":"WARNING","message":"Disk almost full","request-id":"req-1234"}
+#+end_example
+
+Swap ~json~ for ~file~ (with ~SCRIBA_FILE_PATH=/var/log/app.log~), ~syslog~ or
+~color-console~ as needed. That is the everyday Scriba workflow.

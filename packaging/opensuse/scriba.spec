@@ -69,7 +69,7 @@ done
 
 %files
 %license LICENSE
-%doc README.org
+%doc README.org docs
 %dir %{_datadir}/guile
 %dir %{_datadir}/guile/site
 %dir %{_datadir}/guile/site/3.0

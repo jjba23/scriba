@@ -1,0 +1,98 @@
+#+title: scriba — Configuration
+#+author: Josep Bigorra
+#+email: jjbigorra@gmail.com
+#+language: en
+#+options: toc:2
+
+* Configuration
+:PROPERTIES:
+:CUSTOM_ID: configuration
+:END:
+
+Scriba resolves a setting in three layers, each overriding the one below it:
+
+- a keyword at the call site: ~(scriba-auto-logger #:level 'debug)~;
+- an environment variable: ~SCRIBA_LOG_LEVEL=debug~;
+- the Guile parameter default: ~(default-log-level)~.
+
+Because the parameter layer is consulted on every lookup, ~parameterize~ is a
+per-thread, per-scope override that also works for memoized loggers — a
+different port or level yields a different cache entry, never a stale logger.
+
+The two tables below cover the environment layer and the parameter layer; the
+auto-logger is the only backend factory that reads the environment, so direct
+constructor calls are configured with keywords and parameters.
+
+** Environment Variables
+:PROPERTIES:
+:CUSTOM_ID: environment-variables
+:END:
+
+The auto-logger checks for ~SCRIBA_~ prefixed environment variables.
+
+| Variable                  | Meaning                                                                               | Default                                |
+|---------------------------+---------------------------------------------------------------------------------------+----------------------------------------|
+| ~SCRIBA_LOGGER~           | Backend: ~console~, ~color-console~, ~json~, ~syslog~ or ~file~                       | ~console~                              |
+| ~SCRIBA_LOG_LEVEL~        | Minimum severity: ~trace~, ~debug~, ~info~, ~success~, ~warning~, ~error~, ~critical~ | ~info~                                 |
+| ~SCRIBA_LOG_LAYOUT~       | Comma-separated fields to render, e.g. ~level,time,message,context~                   | ~level,tags,time,name,message,context~ |
+| ~SCRIBA_TAG_FILTER~       | Comma-separated tags; only lines carrying one of them are logged                      | empty (no filtering)                   |
+| ~SCRIBA_CONTEXT_FILTER~   | Comma-separated ~key;value~ pairs, e.g. ~tenant;acme~                                 | empty (no filtering)                   |
+| ~SCRIBA_TIMESTAMP_FORMAT~ | ~strftime~ format string                                                              | ~"%F %T %Z"~ (ISO-8601 for syslog)     |
+| ~SCRIBA_OUT_PORT~         | ~stdout~ or ~stderr~                                                                  | ~(current-output-port)~                |
+| ~SCRIBA_FLUSH_PORT~       | ~true~ or ~1~ to flush after every line                                               | ~#t~                                   |
+| ~SCRIBA_LINE_ENDING~      | ~trailing~ or ~leading~ — where the newline goes                                      | ~trailing~                             |
+| ~SCRIBA_JSON_PRETTY~      | ~true~ or ~1~ to pretty-print JSON                                                    | ~#f~                                   |
+| ~SCRIBA_FILE_PATH~        | Destination file when ~SCRIBA_LOGGER=file~ (required by that backend)                 | unset                                  |
+| ~SCRIBA_FILE_MAX_SIZE~    | Rotate after this many bytes, or ~off~ to never rotate                                | ~10485760~ (10 MiB)                    |
+| ~SCRIBA_FILE_MAX_BACKUPS~ | How many rotated backups to keep (~0~ truncates instead)                              | ~5~                                    |
+
+A few details that save you a debugging session:
+
+- Unknown ~SCRIBA_LOGGER~ values fall back to the plain console logger, so a
+  typo never leaves you without logs.
+- ~SCRIBA_LINE_ENDING~, ~SCRIBA_FILE_MAX_SIZE~ and ~SCRIBA_FILE_MAX_BACKUPS~ are
+  validated: a malformed value raises an error instead of being ignored.
+- A space-separated ~SCRIBA_LOG_LAYOUT~ is one unknown field, and therefore an
+  error. Use commas; blank entries around commas are ignored.
+
+** Defaults and Parameters
+:PROPERTIES:
+:CUSTOM_ID: defaults-and-parameters
+:END:
+
+All defaults are Guile parameters, which means ~parameterize~ gives you
+per-thread, per-scope overrides without touching global state:
+
+#+begin_src scheme
+(parameterize ((default-log-level 'warning)
+               (default-out-port (current-error-port)))
+  (define log (scriba-console-logger #:layout '(level message)))
+  (log-info log "muted by the parameterized default")
+  (log-warning log "shown"))
+#+end_src
+
+#+begin_example
+[WARNING] shown
+#+end_example
+
+| Parameter                    | Default                                   | Purpose                          |
+|------------------------------+-------------------------------------------+----------------------------------|
+| ~default-log-level~          | ~'info~                                   | Effective level for new loggers  |
+| ~default-logger~             | ~'console~                                | Backend the auto-logger picks    |
+| ~default-out-port~           | ~(current-output-port)~                   | Default destination port         |
+| ~default-flush-port?~        | ~#t~                                      | Flush after every line           |
+| ~default-time-format~        | ~"%F %T %Z"~                              | ~strftime~ format for timestamps |
+| ~default-log-layout~         | ~'(level tags time name message context)~ | Fields rendered by text backends |
+| ~default-line-ending~        | ~'trailing~                               | Where the newline goes           |
+| ~default-tag-filter~         | ~'()~                                     | Tags a logger keeps              |
+| ~default-context-filter~     | ~'()~                                     | Context pairs a logger requires  |
+| ~default-json-pretty?~       | ~#f~                                      | Indented JSON output             |
+| ~default-syslog-time-format~ | ISO-8601                                  | Syslog timestamps                |
+| ~default-file-path~          | ~#f~                                      | File backend destination         |
+| ~default-file-max-size~      | ~10485760~                                | Rotation threshold in bytes      |
+| ~default-file-max-backups~   | ~5~                                       | Rotated files kept               |
+
+Logger *construction* also accepts ~#:name~, ~#:level~, ~#:layout~,
+~#:out-port~, ~#:flush-port?~, ~#:line-ending~, ~#:tag-filter~,
+~#:context-filter~, ~#:timestamp-format~, and — for the JSON and file
+backends — ~#:pretty?~, ~#:path~, ~#:max-size~ and ~#:max-backups~.

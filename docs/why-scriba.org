@@ -1,0 +1,126 @@
+#+title: scriba — Why Scriba?
+#+author: Josep Bigorra
+#+email: jjbigorra@gmail.com
+#+language: en
+#+options: toc:2
+
+* Why Scriba?
+:PROPERTIES:
+:CUSTOM_ID: why-scriba
+:END:
+
+** Why Scriba?
+:PROPERTIES:
+:CUSTOM_ID: why-scriba
+:END:
+
+A primary advantage of Scriba over standard ~display~, ~write~, or ~println~
+procedures is fine-grained control over log routing, formatting and filtering,
+with the addition of structured context in logs.
+
+By separating formatting, severity levels, and output destinations, Scriba
+offers modularity that makes extending the library — or writing your own custom
+logger — trivial. Scriba is built around the core abstraction of a *logger*,
+and it achieves high performance by memoizing computations and leveraging
+compile-time macro expansions (see [[file:../src/scriba/scriba.scm][scriba.scm]]).
+
+Because every backend speaks the same small logger protocol, you can develop
+against a pretty colourised console and ship the very same code with JSON logs,
+or into a rotating file, or to syslog. Nothing in your application changes.
+
+** Observability and Structured Logging
+:PROPERTIES:
+:CUSTOM_ID: observability-and-structured-logging
+:END:
+
+In modern software development, simply writing ~(display "\nError happened")~
+is no longer enough. As applications grow in complexity, understanding their
+internal state in production (observability) becomes critical.
+
+In practice, we see that traditional unstructured logs are nice and easy for
+humans to read, but notoriously difficult for machines to parse, search, and
+alert on.
+
+That's why structured logging is important. In that mindset, we treat logs not
+as strings of text, but as structured data (typically JSON).
+
+By attaching key-value pairs (context) to your logs, you allow log aggregators
+(think Grafana Loki, Elasticsearch, or Datadog) to instantly filter and
+visualize system behavior.
+
+This also makes your life easier when debugging or trying to gain insights into
+your system.
+
+Scriba gives you the tooling and provides an expressive logger API that can
+produce beautiful, human-readable logs in development, and robust,
+machine-readable structured logs in production, without changing a single line
+of your application code.
+
+Log level is optional in Scriba, as log context can also provide log control.
+
+** My Excuses & Good Logging from Day One
+:PROPERTIES:
+:CUSTOM_ID: my-excuses-good-logging-from-day-one
+:END:
+
+I'm sure you've felt this: when starting a new project, setting up a /proper/
+logging framework feels like an unnecessary chore.
+
+We reach for ~(display "\ngot here")~ or ~format~ because it is frictionless.
+
+But as the codebase grows, those scattered print statements become a noisy,
+unsearchable liability.
+
+With Scriba, you have fewer excuses to procrastinate:
+
+- *"It is too much boilerplate to set up."*
+  With ~scriba-auto-logger~, it takes exactly two lines of code to get a fully
+  functioning, formatted logger. No complex configuration files or
+  initialization rituals required.
+
+- *"Structured JSON is terrible to read during local development."*
+  You do not have to look at JSON while developing. Scriba's auto-logger
+  separates your code from your deployment environment. You get beautiful,
+  human-readable, even colourful console logs on your machine, and robust,
+  machine-parsable JSON logs in production — just by changing the
+  ~SCRIBA_LOGGER~ environment variable.
+
+- *"I don't want to pass metadata through 20 function layers."*
+  Scriba's ~with-log-context~ dynamically scopes your data. Attach a
+  ~request-id~ or ~user-id~ at the top level of your application, and every log
+  statement nested deep within your call stack will automatically include it,
+  thanks to Scheme's parameters and ~parameterize~.
+
+- *"A logging library will slow down my high-performance prototype."*
+  Thanks to the attention put into performance, Scriba's overhead is minimal
+  (and worth it). When a log level is disabled (e.g. debug logs in a production
+  environment), the internal I/O and string formatting operations are entirely
+  bypassed.
+
+Start with Scriba on day one ✨
+
+** On Reproducibility: Why GNU Guix?
+:PROPERTIES:
+:CUSTOM_ID: on-reproducibility-why-gnu-guix
+:END:
+
+A build should never fail because "it worked on my machine". Reliable software
+development requires explicit, bit-for-bit reproducibility and a functional
+approach to package management and system deployment.
+
+#+BEGIN_EXPORT html
+<a href="https://guix.gnu.org/">
+  <img src="https://jointhefreeworld.org/ggg/dist/gnu-guix.svg" alt="GNU Guix logo" style="max-width: 250px; width: 100%; height: auto;" />
+</a>
+#+END_EXPORT
+
+- *Declarative Build Graphs:* packages are pure functions of their inputs, with
+  no implicit system state.
+- *Programmable with Guile:* full system and package configurations written in
+  [[https://www.gnu.org/software/guile/][Guile Scheme]] rather than rigid DSLs or static files.
+- *Time Travel:* rebuild the exact system state from any point in git history
+  using ~guix time-machine~.
+- *Atomic Operations:* instantly upgrade or roll back environments without
+  leaving orphaned dependencies or broken states.
+- *Unified Tooling:* one tool manages development shells, isolated containers,
+  package builds, and full system configurations.

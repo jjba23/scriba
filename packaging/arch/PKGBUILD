@@ -85,4 +85,5 @@ package() {
 
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
   install -Dm644 README.org "$pkgdir/usr/share/doc/$pkgname/README.org"
+  install -Dm644 docs/*.org -t "$pkgdir/usr/share/doc/$pkgname/docs/"
 }

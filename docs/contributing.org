@@ -1,0 +1,91 @@
+#+title: scriba — Contributing
+#+author: Josep Bigorra
+#+email: jjbigorra@gmail.com
+#+language: en
+#+options: toc:2
+
+* Contributing
+:PROPERTIES:
+:CUSTOM_ID: contributing
+:END:
+
+** Contributing
+:PROPERTIES:
+:CUSTOM_ID: contributing
+:END:
+
+Contributing to free software is a uniquely beautiful act, because it embodies
+principles of generosity, collaboration, and empowerment.
+
+We welcome everyone to the Scriba project and encourage active contribution in
+all forms: improving it, suggesting improvements, brainstorming, making it more
+modular or flexible. Feel free to contact me at <jjbigorra@gmail.com> to chat,
+discuss, or report feedback.
+
+*** Ways to help
+:PROPERTIES:
+:CUSTOM_ID: ways-to-help
+:END:
+
+- *Report a bug.* Open an issue on [[https://codeberg.org/jjba23/scriba/issues][Codeberg]]. A minimal reproduction, your
+  Guile version (~guile --version~), and any relevant ~SCRIBA_*~ variables make
+  a fix much faster.
+- *Suggest a feature.* Describe the problem you are trying to solve before the
+  solution you have in mind — that is where the interesting discussion happens.
+- *Improve the docs.* The pages under ~docs/~, the docstrings and the API docs are all fair
+  game, and typos are still bugs.
+- *Write a backend.* A backend is a few dozen lines (see
+  [[file:usage.org::#bring-your-own-backend][Bring your own backend]]); if it is generally useful, we would love to
+  ship it.
+- *Triage.* Reproducing other people's reports is genuinely helpful work.
+
+*** Sending a patch
+:PROPERTIES:
+:CUSTOM_ID: sending-a-patch
+:END:
+
+1. Fork [[https://codeberg.org/jjba23/scriba][the repository]] and create a branch.
+2. Add or update tests next to the change — [[file:../test/veritas/unit/][test/veritas/unit]] is the place
+   for behaviour, [[file:../test/veritas/bench/][test/veritas/bench]] for performance.
+3. Run ~maak test~ and ~maak fmt~ before opening the change request — CI runs
+   the same checks, so a green run locally means a green pipeline.
+4. Describe *why* the change is needed in the commit message. Recent history
+   uses conventional prefixes, e.g. ~feat: ✨ ...~, ~fix: 🔧 ...~,
+   ~docs: 📝 ...~.
+5. If the change is user-visible, update the pages under ~docs/~ or the docstrings.
+
+Not sure where to start? The backlog and kanban boards live at
+[[https://lucidplan.jointhefreeworld.org/tickets/scriba][lucidplan.jointhefreeworld.org/tickets/scriba]]. Say hello first if you like —
+there is no such thing as a silly question.
+
+** Code of Conduct
+:PROPERTIES:
+:CUSTOM_ID: code-of-conduct
+:END:
+
+This project adheres to the jointhefreeworld code of conduct. Find it here:
+
+https://jointhefreeworld.org/blog/articles/personal/jointhefreeworld-code-of-conduct/index.html
+
+In summary, we foster an inclusive, respectful, and cooperative environment for
+all contributors and users of this free software project. Inspired by the ideals
+of the GNU Project, we strive to uphold freedom, equality, and community as
+guiding principles. We believe that collaboration in a community of mutual
+respect is essential to creating excellent free software.
+
+** AI Policy
+:PROPERTIES:
+:CUSTOM_ID: ai-policy
+:END:
+
+This project adheres to the
+[[https://jointhefreeworld.org/blog/articles/personal/jointhefreeworld-ai-policy/index.html][jointhefreeworld AI (Artificial Intelligence) policy]].
+
+Our core principle is simple: *AI should assist human creativity and
+problem-solving, never replace human reasoning.*
+
+While tools like Large Language Models (LLMs) and interactive chatbots can be
+beneficial for reviewing, refactoring small functions, or acting as a sounding
+board, they should be used with moderation.
+
+We require a human in the loop for all contributions.
