@@ -7,7 +7,7 @@ Notable changes to Scriba, newest first. Titles are git tags
 ([[https://codeberg.org/jjba23/scriba/tags][codeberg.org/jjba23/scriba/tags]]); releases before 0.4.0 predate this file,
 so their commit log and tag message are the record.
 
-* Unreleased
+* 0.5.1 — 2026-11-06
 
 ** Changed
 
