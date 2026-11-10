@@ -7,6 +7,13 @@ Notable changes to Scriba, newest first. Titles are git tags
 ([[https://codeberg.org/jjba23/scriba/tags][codeberg.org/jjba23/scriba/tags]]); releases before 0.4.0 predate this file,
 so their commit log and tag message are the record.
 
+* 0.4.8 — 2026-11-10
+
+** Added
+
+- The repository now carries ~.github/FUNDING.yml~, so GitHub shows a Sponsor
+  button that points at [[https://buymeacoffee.com/jjbigorra][Buy Me a Coffee]].
+
 * 0.4.5 — 2026-10-26
 
 A maintenance release.  The log-level suite is built where Veritas can see it
