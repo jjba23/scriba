@@ -2,26 +2,24 @@
 
 ;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
 
-;; scriba is released under the MIT License.
-;;
-;; Permission is hereby granted, free of charge, to any person obtaining a copy
-;; of this software and associated documentation files (the "Software"), to deal
-;; in the Software without restriction, including without limitation the rights
-;; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-;; copies of the Software, and to permit persons to whom the Software is
-;; furnished to do so, subject to the following conditions:
-;;
-;; The above copyright notice and this permission notice shall be included in
-;; all copies or substantial portions of the Software.
-;;
-;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.  See the
-;; LICENSE file for the full text.
+;; scriba is free software: you can redistribute it and/or modify
+;; it under the terms of the Lesser GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; scriba is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; Lesser GNU General Public License for more details.
+
+;; You should have received a copy of the Lesser GNU General Public License
+;; along with scriba.  If not, see <https://www.gnu.org/licenses/>.
 
 (list (channel
         (name 'guix)
         (url "https://codeberg.org/guix/guix.git")
         (branch "master")
-        (commit "973dbc8c00de826f3c38468b09519d30d064eea3")
+        (commit "3b4e87350015c5e5223bcfd5043837e63fd6d635")
         (introduction
          (make-channel-introduction "9edb3f66fd807b096b48283debdcddccfea34bad"
           (openpgp-fingerprint

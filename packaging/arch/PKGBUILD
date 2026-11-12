@@ -19,7 +19,7 @@
 
 # Maintainer: Josep Bigorra <jjbigorra@gmail.com>
 pkgname=scriba
-pkgver=0.5.1
+pkgver=0.5.2
 pkgrel=1
 pkgdesc="Structured logging framework for Guile Scheme"
 arch=('any')
