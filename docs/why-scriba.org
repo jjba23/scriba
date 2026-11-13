@@ -28,6 +28,10 @@ Because every backend speaks the same small logger protocol, you can develop
 against a pretty colourised console and ship the very same code with JSON logs,
 or into a rotating file, or to syslog. Nothing in your application changes.
 
+For how that compares with the logging libraries of other ecosystems — features,
+approach, philosophy and measured throughput — see
+[[file:comparisons.org][Compared to Other Logging Libraries]].
+
 ** Observability and Structured Logging
 :PROPERTIES:
 :CUSTOM_ID: observability-and-structured-logging

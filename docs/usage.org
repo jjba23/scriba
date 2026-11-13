@@ -345,6 +345,112 @@ macro, and filtered with ~#:tag-filter~:
   (log-info log "2 + 2 = ~a" (+ 2 2)))
 #+end_src
 
+** Logging Exceptions
+:PROPERTIES:
+:CUSTOM_ID: logging-exceptions
+:END:
+
+An exception carries more than a message: it has a type, Guile's own rendering
+of what went wrong, and the frames that led to it. Scriba logs all three, and
+lets each backend show as much of them as its destination can carry.
+
+The shortest form wraps the body that may raise:
+
+#+begin_src scheme
+(use-modules (scriba scriba)
+             (scriba exception)
+             (scriba console))
+
+(define log (scriba-console-logger #:name 'app
+                                   #:layout '(level time name message)))
+
+(define (process-request id)
+  (car id))
+
+(with-exception-logging log
+  (process-request 'not-a-pair))
+#+end_src
+
+The failure is logged at ~error~ level and then re-raised, so wrapping a body
+changes nothing about what the program does — it only makes sure the failure is
+in the log before it propagates:
+
+#+begin_example
+[ERROR] [2026-11-13 23:09:04 CET] [app] In procedure car: Wrong type argument in position 1 (expecting pair): not-a-pair
+  at process-request (/tmp/scriba-demo.scm:8)
+  at anonymous (/tmp/scriba-demo.scm:14)
+#+end_example
+
+What the wrapper does, and what it leaves alone:
+
+- ~#:level~ chooses the severity (default ~'error~), and the logger's own level,
+  tag and context filters apply to it like to any other line.
+- ~#:depth~ bounds the trace (default 8). Reading the source of a captured frame
+  is expensive in Guile, so a smaller depth is much cheaper: see
+  [[file:performance.org::#exceptions][the cost of a report]].
+- A ~quit~ — how a Scheme program leaves — is passed on unlogged. Leaving is not
+  a failure.
+- A log statement that itself raises cannot mask the original exception: the
+  report is dropped and the exception still propagates with the key and
+  arguments it arrived with.
+
+When the exception is already caught, build a report from its parts and log
+that. Without a stack the report carries the type and the message, and no trace:
+
+#+begin_src scheme
+(catch #t (lambda ()
+            (process-request 'nope))
+       (lambda (key . args)
+         (log-exception log
+                        (make-exception-report key args))))
+#+end_src
+
+A handler installed before unwinding can capture the frames — that is where the
+trace comes from:
+
+#+begin_src scheme
+(let ((stack #f))
+  (catch #t (lambda ()
+              (process-request 'nope))
+         (lambda (key . args)
+           (log-exception log
+                          (make-exception-report key args #:stack stack)))
+         (lambda (key . args)
+           (set! stack (make-stack #t 2)))))
+#+end_src
+
+*** What each backend does with it
+:PROPERTIES:
+:CUSTOM_ID: exception-rendering
+:END:
+
+The same report, rendered for three destinations. The console and colour
+console indent the trace under the line; the file backend writes the same shape
+into the file:
+
+#+begin_example
+[ERROR] [2026-11-13 23:09:04 CET] [app] In procedure car: Wrong type argument in position 1 (expecting pair): not-a-pair
+  at process-request (/tmp/scriba-demo.scm:8)
+  at anonymous (/tmp/scriba-demo.scm:14)
+#+end_example
+
+JSON nests it, so an indexer can group by frame without parsing a message:
+
+#+begin_example
+{"level":"ERROR","name":"app","message":"In procedure car: Wrong type argument in position 1 (expecting pair): not-a-pair","exception":{"type":"wrong-type-arg","message":"In procedure car: Wrong type argument in position 1 (expecting pair): not-a-pair","trace":["at process-request (/tmp/scriba-demo.scm:8)","at anonymous (/tmp/scriba-demo.scm:16)"]}}
+#+end_example
+
+Syslog frames one message per line, so the trace is joined onto it:
+
+#+begin_example
+<11>2 2026-11-13T23:09:04+0100 framew0rk In procedure car: Wrong type argument in position 1 (expecting pair): not-a-pair | at process-request (/tmp/scriba-demo.scm:8)
+#+end_example
+
+A backend of your own gets the same report through the
+~current-log-exception~ parameter, and the two formatters the built-in backends
+use: ~format-exception-trace~ for a text destination and
+~format-exception-line~ for one that frames a message per line.
+
 ** Log Routing
 :PROPERTIES:
 :CUSTOM_ID: log-routing

@@ -46,6 +46,7 @@ Guix package: ~guile-scriba~
 | Understand what your program is doing          | ~log-info~, ~log-warning~, ~log-error~ and friends, with a level hierarchy |
 | Correlate lines with a request                 | ~with-log-context~ — dynamically scoped key/value pairs                    |
 | Turn categories of logs on and off             | ~with-log-tags~ plus tag filters, with or without levels                   |
+| See why something failed, not just that it did | ~with-exception-logging~ — type, message and trace, per backend            |
 | Ship structured logs to Loki or Elasticsearch  | A JSON backend that emits one object per line                              |
 | Keep logs in a file that does not grow forever | A rotating file backend with size limits and backups                       |
 | Change behaviour per environment               | The ~scriba-auto-logger~, configured by ~SCRIBA_*~ variables               |
@@ -78,6 +79,10 @@ Available loggers: ~console~, ~color-console~, ~json~, ~syslog~ and ~file~.
   rather than global mutable state or locks.
 - *Tags and property-based filtering.* Log with tags instead of levels, or
   alongside levels, and keep only the lines you care about.
+- *Exceptions that read like exceptions.* ~with-exception-logging~ logs Guile's
+  own rendering of the failure plus the frames that raised it, and each backend
+  shows as much as it can carry: indented lines on a terminal, a nested object
+  in JSON, one joined line for syslog.
 - *Layouts per backend.* Choose which fields are rendered and in which order;
   a mistyped field name is an error, never a silently blank line.
 - *Any port is a destination.* ~stdout~, ~stderr~, a file port, a socket port,
@@ -100,6 +105,8 @@ Available loggers: ~console~, ~color-console~, ~json~, ~syslog~ and ~file~.
 - [[file:docs/usage.org][Usage]] — loggers, levels, context, tags, routing and custom backends
 - [[file:docs/configuration.org][Configuration]] — environment variables, defaults and parameters
 - [[file:docs/why-scriba.org][Why Scriba?]] — motivation, observability and reproducibility
+- [[file:docs/comparisons.org][Compared to Other Logging Libraries]] — features, approach and philosophy
+  next to Python, Go, Rust, Node, Java and Elixir, with measured throughput
 - [[file:docs/performance.org][Performance]] — how muted lines stay cheap, and the benchmarks
 - [[file:docs/development.org][Development]] — repository layout, tasks, tests, benchmarks and CI
 - [[file:docs/contributing.org][Contributing]] — sending patches, conduct and AI policy

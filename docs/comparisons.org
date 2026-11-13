@@ -1,0 +1,296 @@
+#+title: scriba — Compared to Other Logging Libraries
+#+author: Josep Bigorra
+#+email: jjbigorra@gmail.com
+#+language: en
+#+options: toc:2
+
+* Compared to Other Logging Libraries
+:PROPERTIES:
+:CUSTOM_ID: compared-to-other-logging-libraries
+:END:
+
+Every language above a certain size grows a logging library, and they all
+answer the same three questions: /where do lines go/, /what do they carry/, and
+/what does a muted line cost me/. This page puts Scriba next to the libraries
+that answer those questions in other ecosystems — what they offer, how they are
+built, and what each choice costs. The last section is where Scriba is the
+weaker tool, because a comparison that only lists wins is marketing.
+
+The short version: those libraries are older, bigger and better connected to
+their ecosystem's tracing and metrics tooling. Scriba is one small file of
+records, macros and ports, with the filtering decided when a logger is built and
+the context attached by the language itself.
+
+** At a glance
+:PROPERTIES:
+:CUSTOM_ID: at-a-glance-comparison
+:END:
+
+| Library                | Language | Shape of the API                                 | Context mechanism              | Backends you get                        |
+|------------------------+----------+--------------------------------------------------+--------------------------------+-----------------------------------------|
+| *Scriba*               | Guile    | ~(log-info logger "msg ~a" x)~                   | ~with-log-context~ (parameters) | console, colour console, JSON, syslog, rotating file |
+| Python ~logging~       | Python   | ~logger.info("msg %s", x)~                       | ~LoggerAdapter~, ~contextvars~  | stream, file, rotating, syslog, queue, SMTP, HTTP |
+| ~loguru~               | Python   | ~from loguru import logger~ then ~logger.info~   | ~logger.bind(user=...)~        | any callable sink, files, rotation, serialization |
+| Go ~log/slog~          | Go       | ~slog.Info("msg", "k", v)~                       | ~slog.With(...)~               | text and JSON handler; you write the rest |
+| ~zap~ / ~zerolog~      | Go       | ~logger.Info("msg", zap.Int("k", v))~            | ~logger.With(...)~             | JSON, console; encoders are the design   |
+| ~log~ + ~tracing~      | Rust     | ~info!("msg"); tracing::info!(k = v, "msg")~     | spans and fields               | subscribers (fmt, JSON, OpenTelemetry)  |
+| ~pino~ / ~winston~     | Node     | ~logger.info({k: v}, "msg")~                     | ~logger.child({requestId})~    | JSON out of the box, transports         |
+| SLF4J + Logback        | Java     | ~log.info("msg {}", x)~                          | MDC                            | appenders configured in ~logback.xml~   |
+| Elixir ~Logger~        | Elixir   | ~Logger.info("msg")~                             | ~Logger.metadata/1~            | ~:logger~ handlers                      |
+
+** Feature comparison
+:PROPERTIES:
+:CUSTOM_ID: feature-comparison
+:END:
+
+| Feature                              | Scriba                          | Python ~logging~ / ~loguru~ | Go ~slog~          | Rust ~tracing~      | Node ~pino~      | Logback        |
+|--------------------------------------+---------------------------------+-----------------------------+--------------------+---------------------+------------------+----------------|
+| Severity levels                      | 7, and levels are optional      | 5 (+custom)                 | 4 + custom         | 5                   | 6 + custom       | 5              |
+| Muted statement cost                 | a no-op binding (~55 ns here)   | level check per call        | handler check      | callsite interest   | level check      | level check    |
+| Where the level filter happens       | once, at logger construction    | every call                  | every call         | once per callsite   | every call       | every call     |
+| Structured context                   | ~with-log-context~ (dynamic)    | adapter, ~contextvars~      | ~With~             | spans               | ~child~          | MDC            |
+| Tag / property filtering             | ~with-log-tags~ + ~#:tag-filter~ | ~extra~ dict, filters       | attributes         | fields              | child bindings   | markers        |
+| Filter by context value              | ~#:context-filter~              | filter callables            | handler code       | ~EnvFilter~         | handler code     | turbo filters  |
+| JSON lines                           | built in                        | formatter or ~serialize~    | built in           | subscriber          | built in         | JSON encoder   |
+| Plain text lines                     | built in (console, file)        | built in                    | built in           | built in            | prettifier       | built in       |
+| Syslog                               | built in, RFC 5424 shaped       | ~SysLogHandler~             | you write it       | via OpenTelemetry   | transport        | appender       |
+| File rotation                        | ~#:max-size~, ~#:max-backups~   | ~RotatingFileHandler~       | you write it       | rolling appender    | transport        | ~RollingFileAppender~ |
+| Exceptions                           | ~with-exception-logging~        | ~logger.exception~          | value + ~!~        | ~?err~ field        | ~err~ serializer | throwable arg  |
+| Layout is a value you pass           | ~#:layout '(level time message)~ | formatter string            | handler options    | subscriber config   | options          | XML pattern    |
+| Loggers are created by               | a memoized constructor          | a global registry           | ~slog.New~         | global macros       | module singleton | XML config     |
+| Configuration source                 | arguments and ~SCRIBA_*~ env    | code, ~dictConfig~, ini     | code               | code or env         | code             | XML or Groovy  |
+| Runtime dependencies                 | Guile + guile-json              | none (stdlib)               | none               | ~log~ + backend     | ~pino~           | slf4j + logback |
+
+** Approach: the same three problems, solved differently
+:PROPERTIES:
+:CUSTOM_ID: approach
+:END:
+
+*** Python: a registry, a hierarchy and per-call checks
+:PROPERTIES:
+:CUSTOM_ID: approach-python
+:END:
+
+~logging.getLogger("app.db")~ returns a /singleton/ from a global registry, and
+dotted names build a tree so that a parent's level and handlers apply to
+children. A call like ~logger.info(...)~ first asks
+~logger.isEnabledFor(INFO)~, then builds a ~LogRecord~, then hands it to every
+handler, each with its own formatter. Context is the awkward part: the standard
+library has ~LoggerAdapter~ (a wrapper you pass around) and, since 3.7,
+~contextvars~, which works but is a separate mechanism from logging itself.
+~loguru~ improves the ergonomics by making the logger itself a callable
+singleton with ~bind~ and callable sinks, at the price of no logger hierarchy.
+
+Scriba borrows the registry's best idea — asking twice for "the same logger"
+is cheap — but keys the memo on the *open arguments* rather than on a name, so
+the name is not a global namespace and a parameterized port, level or layout
+yields its own logger rather than a surprising singleton.
+
+*** Go: a facade, a handler interface, and levels as data
+:PROPERTIES:
+:CUSTOM_ID: approach-go
+:END:
+
+Go's ~log/slog~ made the handler the extension point: ~slog.New(handler)~, where
+a handler decides level filtering, attributes and encoding. ~zap~ and ~zerolog~
+go further and make the *encoder* the design, with typed field constructors
+(~zap.Int~) that avoid reflection and allocation. The level is usually an atomic
+variable read per call, so it can be changed at runtime — something Scriba
+deliberately gives up: changing a level means building another logger.
+
+Scriba's ~make-filtered-logger~ is the same idea as a handler that decides once:
+the level, tag and context filters are compiled into the returned procedures, so
+the hot path has nothing to check.
+
+*** Rust: the facade and the span
+:PROPERTIES:
+:CUSTOM_ID: approach-rust
+:END:
+
+~log~ is a facade over a backend chosen at startup; ~tracing~ extends it with
+spans, which carry context across `.await` points and become the unit that
+subscribers filter and format. That is a genuinely different model: context is
+not "attached to the logger for a while" but "a region of execution".
+
+Scriba's ~with-log-context~ is the small, synchronous cousin: Guile's
+~parameterize~ gives a dynamically scoped value that is installed for the
+dynamic extent of a body, which is the same lifetime a span has, without an
+async runtime to reason about.
+
+*** JavaScript: the child logger
+:PROPERTIES:
+:CUSTOM_ID: approach-javascript
+:END:
+
+~pino~ writes JSON by default and makes ~logger.child({requestId})~ the way to
+carry bindings; serialization is fast because the shape of the object is known.
+~winston~ instead composes ~format~ and ~transport~ objects, which is flexible
+but easy to get subtly wrong. Both lean on the event loop and worker threads to
+move I/O off the hot path.
+
+Scriba has no worker threads. Its equivalent of "move I/O off the hot path" is
+to not build the line at all: a muted call is a no-op, and flushing is a
+per-logger decision (~#:flush-port? #f~).
+
+*** Java: MDC and a configuration file
+:PROPERTIES:
+:CUSTOM_ID: approach-java
+:END:
+
+SLF4J is a compile-time facade over an implementation such as Logback, which is
+configured in ~logback.xml~: appenders, layouts and levels per package. Context
+travels in the MDC — a thread-local map — which is why async code loses it
+unless you propagate it by hand.
+
+Scriba has no facade, no configuration file, and no thread-local map: the
+context is a Guile parameter, which is per-thread by construction and unwinds
+with the body that installed it.
+
+*** Scheme: a logger is a value
+:PROPERTIES:
+:CUSTOM_ID: approach-scheme
+:END:
+
+Scriba has no global registry, no facade, no configuration file and no
+thread-local state. A logger is a record holding the procedures that write its
+lines, created by a constructor that takes keyword arguments, memoized so the
+same arguments give the same logger back. Everything else — context, tags — is a
+parameter, and everything a backend needs to differ on is a procedure it passes
+in:
+
+#+begin_src scheme
+(define log (scriba-console-logger #:name 'app
+                                  #:level 'info
+                                  #:layout '(level time name message context)))
+#+end_src
+
+** Philosophy: what Scriba does differently
+:PROPERTIES:
+:CUSTOM_ID: philosophy
+:END:
+
+- *Levels are optional.* Other libraries assume every line has a severity.
+  Scriba separates ~log-message~ (always logged) from the levelled procedures,
+  and lets tags and context filters do the work a level would otherwise do. That
+  is why ~#:level #t~ and ~#:level #f~ are ordinary levels rather than special
+  cases.
+- *Filtering is compiled, not checked.* The threshold is applied when the logger
+  is built: a level below it is bound to a no-op procedure. Nothing in the hot
+  path asks whether logging is enabled.
+- *Context is the language's own dynamic scope.* No MDC map to propagate, no
+  adapter to pass around, no ~contextvars~ to integrate: ~with-log-context~
+  parameterizes an existing parameter, so it nests, unwinds and stays per-thread
+  for free.
+- *A backend is a formatter plus a port.* Five backends ship in one page of code
+  each, and a sixth is the same three pieces: reuse ~make-filtered-logger~, pick
+  the level procedures, and write the line. There is no handler interface to
+  implement and no plugin registration.
+- *The layout is a value, checked at construction.* ~#:layout~ is a list of
+  field names; a typo is an error rather than a blank line, and each backend
+  publishes the fields it understands.
+- *Errors are a log call.* ~with-exception-logging~ logs a Guile exception —
+  type, message and trace — and re-raises it, and each backend renders the same
+  report in its own idiom: indented lines on a terminal, a nested object in
+  JSON, one joined line for syslog.
+- *Small enough to read.* The whole library is a handful of files you can read
+  in an afternoon, which is the point: when logging misbehaves, the bug is in
+  code you already understand.
+
+** Measured throughput
+:PROPERTIES:
+:CUSTOM_ID: measured-throughput
+:END:
+
+The comparison below is the output of
+[[file:../benchmarks/compare/run.sh][benchmarks/compare/run.sh]], which runs each implementation in its own process,
+writes to ~/dev/null~, calls each workload three times and reports the median in
+nanoseconds per call. Measured on an AMD Ryzen 5 7640U with Guile 3.0.11,
+CPython 3.13.16 and Node 24.22.1:
+
+#+begin_example
+impl            workload        calls   ns/op
+scriba          text literal   200000    1691
+scriba          text 2 args    100000    8137
+scriba          json literal   100000   10125
+scriba          muted debug   4000000      55
+python-logging  text literal   200000    7365
+python-logging  text 2 args    100000    7693
+python-logging  muted debug   4000000     115
+python-loguru    text literal   200000   12151
+python-loguru    text 2 args    100000   13306
+python-loguru    muted debug   4000000     155
+node-pino       text literal   200000    3194
+node-pino       text 2 args    100000    3296
+node-pino       muted debug   4000000       7
+#+end_example
+
+Read it with the caveats it deserves:
+
+- Every implementation writes one line per call, with a timestamp and a level,
+  to ~/dev/null~. The lines are not byte-identical, and a different formatter
+  would move the numbers.
+- ~pino~ emits JSON for all three rows, so its "text literal" is a JSON object
+  with time, pid and hostname — a fairer partner for Scriba's ~json literal~.
+  Node's JSON line is the fastest of the four (3.2 µs against Scriba's 10.1 µs).
+- CPython's logging beats Scriba on the two-argument line (7.7 µs against
+  8.1 µs), because Guile's ~format~ is slower than CPython's ~%~ substitution.
+  Scriba skips the formatter for messages without arguments, which is why the
+  literal line is 4.4× faster than CPython's.
+- The muted row is where the design shows: Scriba's no-op binding costs 55 ns
+  against CPython's 115 ns and loguru's 155 ns. ~pino~'s check is a 7 ns
+  property read, and it wins.
+- A JIT-less interpreter, a JIT-less CPython and V8 are different machines. The
+  useful reading is the ratio /within/ an implementation: a muted statement
+  against an emitted one.
+
+** Logging an exception is not free
+:PROPERTIES:
+:CUSTOM_ID: exception-cost
+:END:
+
+Reporting an exception costs more than a line, because the report has to be
+rendered and the stack has to be read. Measured with a plain timer on the same
+machine:
+
+| Workload                                       | Cost per call |
+|------------------------------------------------+---------------|
+| a plain console line                           | ~1.4 µs       |
+| ~log-exception~ with a report that has no stack | ~11 µs        |
+| ~with-exception-logging~, ~#:depth 3~           | ~1.0 ms       |
+| ~with-exception-logging~, ~#:depth 8~           | ~1.8 ms       |
+
+Reading the source of one frame of a captured stack costs Guile a few hundred
+microseconds, which is where the milliseconds go; ~#:depth~ bounds it. That
+price buys the frame that raised and the callers above it, in the same line as
+the message, on every backend. Errors are rare by definition — but a program
+that logs exceptions in a loop should pass a smaller ~#:depth~, and a handler
+that already caught the exception can log a report without a trace for the price
+of a message.
+
+** Where Scriba is not the better tool
+:PROPERTIES:
+:CUSTOM_ID: where-scriba-is-not-better
+:END:
+
+- *It only speaks Guile.* Every other library on this page is portable within
+  its language and has a decade of users; Scriba has one implementation, one
+  author, and no bindings.
+- *No ecosystem integration.* There is no OpenTelemetry exporter, no sampling,
+  no rate limiting, no log shipping, no metrics bridge, and no dashboard
+  integration. ~tracing~, ~slog~ and Logback all have those.
+- *No asynchronous I/O.* Nothing here buffers to a worker thread or a queue;
+  logging is synchronous and, by default, flushed per line.
+- *No hot reconfiguration.* Loggers are memoized values, so changing a level
+  means constructing another logger; there is no equivalent of Logback watching
+  its XML, or ~slog~'s atomic level variable, or ~logger.disable("module")~.
+- *Levels are not a hierarchy.* There is no inherited per-package level: every
+  logger carries its own threshold and its own filters.
+- *Slower with format arguments than the alternatives* on this machine, for the
+  reason given above, and slower at JSON than ~pino~.
+- *Smaller test surface.* Ten spec files and a few hundred assertions are not a
+  decade of production use across millions of processes.
+
+What it does have, and what the rest of this manual is about, is the smallest
+change of shape: a logger you build, context the language gives you, a filter
+that costs nothing when it is off, and five destinations that speak the same
+call.

@@ -19,6 +19,7 @@ scriba/
 ├── src/scriba/        the library
 │   ├── scriba.scm     core: records, levels, filters, context, memoization
 │   ├── layout.scm     shared text formatting (timestamps, tags, context)
+│   ├── exception.scm  exception reports and their per-backend rendering
 │   ├── console.scm    plaintext console backend
 │   ├── color-console.scm  ANSI-coloured console backend
 │   ├── json.scm       JSON backend
@@ -27,6 +28,7 @@ scriba/
 │   └── auto.scm       environment-driven auto-logger
 ├── test/veritas/unit/ unit specs (Veritas)
 ├── test/veritas/bench/ benchmarks (Veritas)
+├── benchmarks/compare/ the cross-language comparison in docs/comparisons.org
 ├── CHANGELOG.org      release notes
 ├── channels.scm       pinned Guix revision
 ├── manifest.scm       development environment
@@ -58,11 +60,11 @@ pinned Guix environment in ~channels.scm~ + ~manifest.scm~):
 :CUSTOM_ID: tests
 :END:
 
-The suite is written with [[https://codeberg.org/jjba23/veritas][Veritas]]: nine spec files, 91 tests and 144
+The suite is written with [[https://codeberg.org/jjba23/veritas][Veritas]]: ten spec files, 114 tests and 174
 assertions, covering the severity matrix, tag and context filters, layout
 rendering and validation, JSON structure, syslog priorities, ANSI escapes, file
-rotation, UTF-8 byte accounting, environment configuration, auto-logger routing
-and line framing.
+rotation, UTF-8 byte accounting, exception reports and traces, environment
+configuration, auto-logger routing and line framing.
 
 #+begin_src shell
 maak test
@@ -87,6 +89,16 @@ maak bench
 #+end_src
 
 See [[file:performance.org::#benchmarks][Benchmarks]] above for what the numbers mean and how to read the report.
+
+The cross-language comparison on [[file:comparisons.org][Compared to Other Logging Libraries]] is not
+part of that suite: it runs each implementation in its own runtime, so it lives
+in ~benchmarks/compare/~ and is driven by a shell script instead. It sets up
+~loguru~ and ~pino~ into a scratch directory under ~$TMPDIR~ on demand, and
+skips a runtime it cannot set up rather than failing:
+
+#+begin_src shell
+guix shell -m manifest.scm -- ./benchmarks/compare/run.sh
+#+end_src
 
 ** API documentation
 :PROPERTIES:

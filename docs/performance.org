@@ -93,28 +93,30 @@ the cost per call. Every destination is ~/dev/null~. The first benchmark is an
 empty loop at the same call count, which is the baseline the muted figures are
 measured against.
 
-Typical output on an ordinary laptop, with the median of the three runs and the
-share of that total spent in the garbage collector:
+Typical output on an AMD Ryzen 5 7640U with Guile 3.0.11, taking the median of
+the three runs and the share of that total spent in the garbage collector:
 
 #+begin_src
-workload                              calls   total     GC    ns/call    vs no-op
-no-op thunk                         4000000  0.0146s   0.0%        3.6       1.00x
-muted log-debug (level info)        4000000  0.4629s  80.0%      115.7      31.75x
-muted log-info (level #f)           4000000  0.4683s  79.3%      117.1      32.12x
-tag filter miss (log-info)          2000000  0.5767s  75.9%      288.4      79.10x
-context filter miss (log-info)      2000000  0.8209s  74.7%      410.5     112.59x
-console INFO (literal message)       100000  0.3162s  55.6%     3162.5     867.50x
-console INFO (2 format args)          20000  0.5999s  85.5%    29996.8    8228.42x
-console INFO, flush disabled          20000  0.5971s  88.0%    29854.7    8189.44x
-JSON INFO -> /dev/null                12000  0.6675s  68.3%    55624.8   15258.42x
-file INFO -> /dev/null                20000  0.6071s  85.1%    30354.6    8326.56x
-console INFO with tags + context      12000  0.8130s  89.1%    67749.7   18584.39x
-memoized logger lookup               150000  0.6901s  84.4%     4601.0    1262.09x
-raw logger construction                8000  1.1454s  91.1%   143177.2   39274.90x
+workload                                      calls   total     GC    ns/call
+no-op thunk                                 4000000  0.0169s   0.0%        4.2
+muted log-debug (below the level)           4000000  0.4622s  78.8%      115.5
+muted log-info (level #f)                   4000000  0.5411s  80.7%      135.3
+tag filter miss (log-info)                  2000000  0.6042s  75.5%      302.1
+context filter miss (log-info)              2000000  0.8492s  73.2%      424.6
+console INFO (literal message)               100000  0.3313s  54.4%     3313.2
+console INFO (2 format args)                  20000  0.6072s  84.8%    30361.2
+console INFO, flush disabled                  20000  0.6093s  86.3%    30467.2
+JSON INFO -> /dev/null                        12000  0.6967s  67.5%    58060.9
+file INFO -> /dev/null                        20000  0.6471s  85.6%    32354.4
+console INFO with tags + context              12000  0.8236s  88.5%    68633.9
+memoized logger lookup                       150000  0.7276s  85.2%     4850.7
+raw logger construction                        8000  1.1994s  89.3%   149928.0
+log an exception with its trace                5000 16.4627s  43.4%  3292546.0
+log an exception without a trace              20000  0.3983s  61.4%    19914.8
 #+end_src
 
 Muted statements cost a little over a hundred nanoseconds, of which the call
-itself is a small part: an empty loop at the same count takes 3.6 ns a turn.
+itself is a small part: an empty loop at the same count takes 4 ns a turn.
 Disabled backends never format, and an emitted literal line costs about three
 microseconds. The formatter dominates any line that carries arguments, which is
 why a literal message skips it.
@@ -125,6 +127,33 @@ current one; the totals above read a bit higher than that because ~statprof~
 samples the run and its GC time is part of the total. The exact figures depend
 on your hardware and its load, so treat them as orders of magnitude rather than
 contracts.
+
+** The Cost of a Report
+:PROPERTIES:
+:CUSTOM_ID: exceptions
+:END:
+
+Logging an exception is the one path that is not cheap, and it is worth knowing
+why. Reported with a plain timer on the same machine, without ~statprof~
+sampling:
+
+| Workload                                        | Cost per call |
+|-------------------------------------------------+---------------|
+| a plain console line                            | ~1.4 µs       |
+| ~log-exception~ with a report that has no stack | ~11 µs        |
+| ~with-exception-logging~, ~#:depth 3~           | ~1.0 ms       |
+| ~with-exception-logging~, ~#:depth 8~           | ~1.8 ms       |
+
+Two things dominate. Guile renders the message itself, which keeps every
+exception shape — a system error's strerror text, a syntax error's location —
+where it belongs, and costs about ten microseconds. And reading the source of a
+frame of a captured stack costs Guile a few hundred microseconds per frame,
+which is why the trace, not the message, is the expensive part, and why
+~#:depth~ is the knob that matters: the walk stops as soon as it has ~#:depth~
+lines, so asking for three frames costs roughly a third of asking for eight.
+
+[[file:comparisons.org::#measured-throughput][Compared to Other Logging Libraries]] has the same measurement next to CPython's
+~logging~, ~loguru~ and Node's ~pino~, and the script that produced it.
 
 ** Compile-Time Macros
 :PROPERTIES:
