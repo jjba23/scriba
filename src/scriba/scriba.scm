@@ -72,6 +72,7 @@
                                  with-log-tags
                                  current-log-context
                                  current-log-tags
+                                 current-log-exception
                                  memoize-logger
                                  maybe-log-proc
                                  tag-match?))
@@ -515,6 +516,12 @@ loggers."
 
 (define current-log-tags
   (make-parameter '()))
+
+;; The exception report of the line being logged, bound by
+;; `(scriba exception)' around the call to a backend so each one can render it
+;; in its own idiom.
+(define current-log-exception
+  (make-parameter #f))
 
 (define-syntax-rule (with-log-context ctx body ...)
   "Dynamically append CTX (an alist) to the current log context for the duration of BODY."

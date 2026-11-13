@@ -30,11 +30,25 @@
   #:use-module (json)
   #:use-module ((scriba layout)
                 #:select (format-plain-time))
+  #:use-module (scriba exception)
   #:use-module (scriba scriba)
   #:export (scriba-json-logger default-json-pretty? %make-scriba-json-logger))
 
 (define default-json-pretty?
   (make-parameter #f))
+
+(define (exception->json report)
+  "Returns the `exception' member of a line logged for an exception.
+
+The trace becomes an array rather than one string, so an indexer can group by
+frame without parsing the text of a message."
+  (list (cons 'exception
+              (list (cons 'type
+                          (symbol->string (exception-report-type report)))
+                    (cons 'message
+                          (exception-report-message report))
+                    (cons 'trace
+                          (list->vector (exception-report-trace report)))))))
 
 (define (get-time-field format-string)
   "Returns a timestamp alist entry."
@@ -98,7 +112,11 @@
                                          (let ((frag (assq-ref fragments sym)))
                                            (if frag frag
                                                '()))) layout))
-               (fields (apply append ordered-fragments))
+               (report (current-log-exception))
+               (fields (append (apply append ordered-fragments)
+                               (if report
+                                   (exception->json report)
+                                   '())))
                (serialized-log (scm->json-string fields
                                                  #:pretty pretty?)))
           (write-log-line out-port serialized-log line-ending)

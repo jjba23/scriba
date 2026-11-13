@@ -47,6 +47,7 @@
 (define-module (veritas bench logging-bench-spec)
   #:use-module (veritas veritas)
   #:use-module (scriba scriba)
+  #:use-module (scriba exception)
   #:use-module (scriba console)
   #:use-module (scriba json)
   #:use-module (scriba file)
@@ -209,6 +210,38 @@
                                  (scriba-console-logger #:out-port sink-port
                                                         #:level 'info))))))
 
+;; What it costs to report a failure: the raise, the stack capture, Guile's own
+;; rendering of the message and the line. The re-raise is swallowed here so the
+;; loop measures logging rather than the exception.
+(define (raising-call)
+  (car 5))
+
+(define exception-benchmark
+  (benchmark #:name "log an exception with its trace, 5000 calls"
+             #:runs 3
+             #:thunk (lambda ()
+                       (repeat 5000
+                               (lambda ()
+                                 (catch #t
+                                        (lambda ()
+                                          (with-exception-logging console
+                                                                  (raising-call)))
+                                        (lambda (key . args)
+                                          #f)))))))
+
+;; The report with no stack at all, which is what a `catch' handler that did not
+;; save one can build: Guile's message, no frames to walk.
+(define exception-report-benchmark
+  (benchmark #:name "log an exception without a trace, 20000 calls"
+             #:runs 3
+             #:thunk (lambda ()
+                       (repeat 20000
+                               (lambda ()
+                                 (log-exception console
+                                                (make-exception-report 'app-error
+                                                                       (list
+                                                                        "disk on fire"))))))))
+
 (define raw-construction-benchmark
   (benchmark #:name "raw logger construction, 8000 calls"
              #:runs 3
@@ -233,4 +266,6 @@
                file-benchmark
                tags-context-benchmark
                memoized-lookup-benchmark
-               raw-construction-benchmark))
+               raw-construction-benchmark
+               exception-benchmark
+               exception-report-benchmark))

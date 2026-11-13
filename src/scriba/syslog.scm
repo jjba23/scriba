@@ -30,6 +30,7 @@
   #:use-module (srfi srfi-1)
   #:use-module ((scriba layout)
                 #:select (format-plain-time display->string))
+  #:use-module (scriba exception)
   #:use-module (scriba scriba)
   #:export (scriba-syslog-logger %make-scriba-syslog-logger
                                  default-syslog-time-format))
@@ -117,7 +118,12 @@
                              (format-timestamp timestamp-format) #f))
                (ctx-str (format-context (current-log-context)))
                (tags-str (format-tags (current-log-tags)))
-               (user-msg (format-log-message msg args))
+               (report (current-log-exception))
+               ;; RFC 5424 frames one message per line, so the trace is joined
+               ;; onto it instead of indented under it.
+               (user-msg (if report
+                             (format-exception-line report)
+                             (format-log-message msg args)))
                (parts-alist `((level unquote level-str)
                               (tags unquote tags-str)
                               (time unquote time-str)

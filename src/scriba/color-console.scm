@@ -29,6 +29,7 @@
   #:use-module (srfi srfi-1)
   #:use-module ((scriba layout)
                 #:select (format-plain-time display->string))
+  #:use-module (scriba exception)
   #:use-module (scriba scriba)
   #:export (scriba-color-console-logger %make-scriba-color-console-logger))
 
@@ -140,9 +141,17 @@
                                               (assq-ref parts-alist sym))
                                             layout))
 
-               (final-output (string-join ordered-strings " ")))
+               (final-output (string-join ordered-strings " "))
 
-          (write-log-line out-port final-output line-ending)
+               (report (current-log-exception))
+
+               ;; The trace is dimmed so the message keeps the level's colour.
+               (with-trace (if report
+                               (string-append final-output "\n" ansi-dim
+                                              (format-exception-trace report)
+                                              ansi-reset) final-output)))
+
+          (write-log-line out-port with-trace line-ending)
 
           (when flush-port?
             (force-output out-port))))))

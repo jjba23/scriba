@@ -36,6 +36,7 @@
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-13)
   #:use-module (scriba scriba)
+  #:use-module (scriba exception)
   #:export (format-timestamp format-plain-time
                              format-context
                              format-tags
@@ -119,7 +120,11 @@ The returned procedure maps a level symbol (or #t for level-less messages)
 to a `(lambda (msg . args) ...)' procedure. When called, that procedure
 formats MSG with ARGS, builds the configured LAYOUT and hands the finished
 line, without any newline, to EMIT. Backends use EMIT to choose their
-destination, newline placement and flushing behaviour."
+destination, newline placement and flushing behaviour.
+
+A line logged for an exception - see `(scriba exception)' - carries the
+report's trace indented under it, because a text destination has room for the
+frames that JSON and syslog have to fold into fields."
   (validate-log-layout layout
                        #:fields text-layout-fields)
   (let ((name-str (format-name name))
@@ -148,5 +153,9 @@ destination, newline placement and flushing behaviour."
                  (ordered-strings (filter-map (lambda (sym)
                                                 (assq-ref parts-alist sym))
                                               layout))
-                 (final-output (string-join ordered-strings " ")))
-            (emit final-output)))))))
+                 (final-output (string-join ordered-strings " "))
+                 (exception (current-log-exception)))
+            (emit (if exception
+                      (string-append final-output "\n"
+                                     (format-exception-trace exception))
+                      final-output))))))))
