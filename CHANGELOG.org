@@ -7,6 +7,85 @@ Notable changes to Scriba, newest first. Titles are git tags
 ([[https://codeberg.org/jjba23/scriba/tags][codeberg.org/jjba23/scriba/tags]]); releases before 0.4.0 predate this file,
 so their commit log and tag message are the record.
 
+* 1.0.0 — 2026-11-13
+
+The release that makes a Guile exception a log line, and the one that says the
+public API has settled: the exports of the six modules, the ~SCRIBA_*~
+variables and the layout field names are what the project promises to keep.
+
+** Added
+
+*** Exception logging — ~(scriba exception)~
+
+- ~make-exception-report~ turns the ~key~ and ~args~ a ~catch~ handler receives
+  into a report: the type, Guile's own rendering of the message
+  (~print-exception~, so system errors keep their strerror text and syntax
+  errors their location) and the frames that raised, as ~at NAME (FILE:LINE)~
+  lines, innermost first.
+- ~exception-report?~, ~exception-report-type~, ~exception-report-message~ and
+  ~exception-report-trace~ read one back.
+- ~log-exception~ logs a report at ~#:level~ (default ~'error~) through any
+  logger, so the logger's own level, tag and context filters apply to it.
+- ~call-with-exception-log~ and ~with-exception-logging~ run a body, log an
+  exception it raises and re-raise it. The handler runs before unwinding, so the
+  trace still holds the frames that raised; a ~quit~ is passed on unlogged, and
+  a log statement that itself raises is swallowed rather than allowed to hide
+  the failure it was reporting.
+- ~#:depth~ bounds the trace (default 8), because reading the source of a frame
+  of a captured stack costs Guile a few hundred microseconds.
+- ~format-exception-trace~ and ~format-exception-line~ render a report for text
+  and line-framed destinations, for backends of your own.
+- The ~current-log-exception~ parameter in ~(scriba scriba)~, bound around a
+  backend call so every backend can render the report in its own idiom.
+
+*** Per-backend rendering
+
+- Console and file: the message on the log line, the trace indented under it.
+- Colour console: the same, with the trace dimmed.
+- JSON: an ~exception~ member holding ~type~, ~message~ and a ~trace~ array, so
+  an indexer can group by frame without parsing a message.
+- Syslog: one line, since RFC 5424 frames one message per line — the message and
+  the frames joined with ~|~.
+
+*** Documentation
+
+- New page [[file:docs/comparisons.org][Compared to Other Logging Libraries]]: features, approach and
+  philosophy next to Python's ~logging~ and ~loguru~, Go's ~log/slog~ and ~zap~,
+  Rust's ~log~ and ~tracing~, Node's ~pino~ and ~winston~, SLF4J and Logback,
+  and Elixir's ~Logger~, with the measured throughput and a closing section on
+  where Scriba is the weaker tool.
+- [[file:docs/usage.org::#logging-exceptions][Usage]] gained ~Logging Exceptions~ and ~What each backend does with it~, with
+  output copied from a real run.
+- [[file:docs/performance.org::#exceptions][Performance]] gained ~The Cost of a Report~ and a benchmark table measured on
+  the machine this release was cut on.
+- ~README.org~, ~docs/why-scriba.org~ and ~docs/development.org~ point at the
+  new page; the repository layout lists ~exception.scm~ and ~benchmarks/compare~.
+
+*** Benchmarks
+
+- New Veritas benchmarks: ~log an exception with its trace~ and ~log an
+  exception without a trace~.
+- New ~benchmarks/compare/~ — the cross-language comparison the manual quotes,
+  as a shell script and three programs that run the same three workloads against
+  ~/dev/null~. ~loguru~ and ~pino~ are installed into a scratch directory on
+  demand, and a runtime that cannot be set up is skipped rather than failing.
+
+** Changed
+
+- ~(scriba layout)~, ~(scriba color-console)~, ~(scriba json)~ and
+  ~(scriba syslog)~ read ~current-log-exception~ and render it; a line logged
+  any other way is unchanged, and a line logged for an exception is now
+  multi-line on the text backends.
+- ~docs/development.org~ counts ten spec files, 114 tests and 174 assertions.
+
+** Notes
+
+- The public API is now the stability promise, so the next breaking change is
+  the next major version. ~guix.scm~ still builds the working tree as version
+  ~dev~: the release is identified by the ~v1.0.0~ tag rather than by a version
+  string in the tree.
+- The Arch checksum is pinned afterwards, from the published archive.
+
 * 0.5.2 — 2026-11-12
 
 - Builds against the channels this project builds against: the jointhefreeworld collection at v1.0.4, and Guix master `3b4e873`.

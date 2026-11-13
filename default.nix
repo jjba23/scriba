@@ -32,7 +32,7 @@
 
 stdenv.mkDerivation {
   pname = "guile-scriba";
-  version = "0.5.2";
+  version = "1.0.0";
 
   src = ./.;
 
