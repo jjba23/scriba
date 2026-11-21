@@ -73,6 +73,6 @@ concurrently by default.")
                           ;; the jointhefreeworld channel pinned in
                           ;; channels.scm carries.
                           (specification->package "guile-dokgen")
-                          texinfo
+                          (specification->package "texinfo")
                           watchexec
                           guile-veritas))
