@@ -1,0 +1,6 @@
+flowchart LR
+  call["log-info, log-error, ..."] --> filter["maybe-log-proc<br/>level, tag and context filters"]
+  filter -- "muted level or filters miss" --> noop["log-unit, a no-op"]
+  filter -- "allowed" --> format["format-log-message<br/>rendered by the logger's layout"]
+  format --> write["write-log-line<br/>framed with its line ending"]
+  write --> port[("a port: console, JSON, file or syslog")]

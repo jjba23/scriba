@@ -28,7 +28,16 @@
 ;; If a severity level falls below the configured threshold, its logging procedure
 ;; is bound directly to a zero-overhead no-op function (`log-unit`). This avoids
 ;; unnecessary runtime level checks during iterative logging calls.
-
+;;
+;; ```mermaid
+;; flowchart LR
+;;   call["log-info, log-error, ..."] --> filter["maybe-log-proc<br/>level, tag and context filters"]
+;;   filter -- "muted level or filters miss" --> noop["log-unit, a no-op"]
+;;   filter -- "allowed" --> format["format-log-message<br/>rendered by the logger's layout"]
+;;   format --> write["write-log-line<br/>framed with its line ending"]
+;;   write --> port[("a port: console, JSON, file or syslog")]
+;; ```
+;;
 ;; Thread/fiber-safe contextual tracing data can be appended dynamically using
 ;; the `with-log-context` and `with-log-tags` macros.
 

@@ -21,6 +21,10 @@
   #:declarative? #t
   #:use-module (maak maak)
   #:use-module ((ice-9 rdelim) #:select (read-line))
+  ;; `scandir', for the mermaid sources `maak diagrams' renders, and
+  ;; `string-drop-right', to name each image after its source.
+  #:use-module ((ice-9 ftw) #:select (scandir))
+  #:use-module ((srfi srfi-13) #:select (string-drop-right string-suffix?))
   ;; The container helpers are imported under a prefix because the
   ;; tasks below are named the way maak exposes them on the command
   ;; line -- `maak container-build' -- and a task may not shadow the
@@ -62,15 +66,58 @@
 ;; would be one word inside a part, and a failure would be reported by the line
 ;; rather than by the step that failed.
 (define (docs)
-  "Generate technical API documentation for Scriba."
+  "Generate technical API documentation for Scriba, and render it as HTML.
+
+Dokgen reads the modules rather than their text, so every exported procedure
+that has a docstring is in the reference.  Beside the Texinfo it writes the
+stylesheet and the script the page is read with, and a directory of diagrams
+for the docstrings that carry one; Texinfo copies neither, so both are put
+beside the page that points at them."
   (delete-file-recursively "doc")
-  (time-machine-manifest-shell (list "documenta" "api"
-                                     (~ "./src/~a" project-name)))
-  (time-machine-manifest-shell (list "texi2any" "-v" "--html"
-                                     (~ "--css-ref=~a" api-docs-css-url)
-                                     "-o" "index_html"
-                                     "./doc/api/index.texi"))
-  (mv "./index_html" "./doc/api-dist"))
+  (time-machine-manifest-shell
+   (list "dokgen" "api"
+         "--destination" "doc/api"
+         (~ "./src/~a" project-name))
+   #:verbose? #t)
+  (mkdir-p "doc/api-dist")
+  (time-machine-manifest-shell
+   (list "texi2any" "-v" "--html" "--no-split"
+         (~ "--css-ref=~a" api-docs-css-url)
+         "-I" "doc/api"
+         "-c" (shell-quote
+               (string-append
+                "EXTRA_HEAD="
+                "<link rel=\"stylesheet\" href=\"dokgen.css\">"
+                "<script src=\"dokgen.js\" defer></script>"))
+         "-o" "doc/api-dist/index.html"
+         "./doc/api/index.texi")
+   #:verbose? #t)
+  (for-each (lambda (asset)
+              (when (file-exists? (~ "doc/api/~a" asset))
+                (cp (~ "doc/api/~a" asset) "doc/api-dist"
+                    #:force? #t #:verbose? #t)))
+            '("dokgen.css" "dokgen.js"))
+  (when (file-exists? "doc/api/diagrams")
+    (cp "doc/api/diagrams" "doc/api-dist" #:force? #t #:verbose? #t)))
+
+;; The diagrams under resources/diagrams are the sources of what the README
+;; shows; their SVG is committed beside them, so reading the README needs no
+;; renderer.  Rendering is a task of its own because the renderer is a
+;; JavaScript tool the pinned environment does not carry: it is found on $PATH,
+;; which is where a `npm install --global @mermaid-js/mermaid-cli' puts it.
+(define (diagrams)
+  "Render every mermaid source under resources/diagrams to the SVG beside it."
+  (for-each
+   (lambda (name)
+     (let* ((source (in-vicinity "resources/diagrams" name))
+            (image (string-append (string-drop-right source 4) ".svg")))
+       (run (list "mmdc" "-i" source "-o" image
+                  "--backgroundColor" "transparent")
+            #:verbose? #t)))
+   (scandir "resources/diagrams"
+            (lambda (name)
+              (and (not (member name '("." "..")))
+                   (string-suffix? ".mmd" name))))))
 
 (define (deploy)
   "Generate documentation for the project and publish to web directory."

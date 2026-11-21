@@ -59,6 +59,19 @@ Available loggers: ~console~, ~color-console~, ~json~, ~syslog~ and ~file~.
 #+ATTR_HTML: :width 100% :alt A terminal running Scriba: JSON lines and a console warning
 [[https://jointhefreeworld.org/static-assets/scriba/screen-2026-06-02-20-11-36.png]]
 
+* How a log line is made
+:PROPERTIES:
+:CUSTOM_ID: how-a-log-line-is-made
+:END:
+
+A log call is a path, not a print statement. The level filter is decided once,
+when the logger is built, so a muted call is bound to a no-op and costs a
+function call; what survives it is rendered by the logger's layout and written
+to the port the backend was given.
+
+#+attr_html: :width 720 :alt A log call passing the level filter, the layout and the port
+[[file:resources/diagrams/logging-pipeline.svg]]
+
 * Features
 :PROPERTIES:
 :CUSTOM_ID: features

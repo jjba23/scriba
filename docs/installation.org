@@ -195,5 +195,5 @@ flexibility and observability.")
 | POSIX system | —            | Uses ~gethostname~, ~stat~, ~localtime~, file rotation |
 
 Development and testing additionally use [[https://codeberg.org/jjba23/veritas][Veritas]] (the test framework),
-[[https://codeberg.org/jjba23/maak][maak]] (task runner) and [[https://codeberg.org/luis-felipe/guile-documenta][Documenta]] (API docs) — all provided by
+[[https://codeberg.org/jjba23/maak][maak]] (task runner) and [[https://github.com/jjba23/guile-dokgen][Dokgen]] (API docs) — all provided by
 ~manifest.scm~.
