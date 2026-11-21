@@ -31,7 +31,7 @@ and compile-time macros."
 #+end_quote
 
 *Links:* [[https://codeberg.org/jjba23/scriba][Source & issues]] ·
-[[https://jointhefreeworld.org/api-docs/scriba/API.html][API reference]] ·
+[[https://jointhefreeworld.org/api-docs/scriba/index.html][API reference]] ·
 [[https://lucidplan.jointhefreeworld.org/tickets/scriba][Backlog & kanban]] ·
 [[file:CHANGELOG.org][Changelog]] ·
 Guix package: ~guile-scriba~
@@ -52,7 +52,7 @@ Guix package: ~guile-scriba~
 | Change behaviour per environment               | The ~scriba-auto-logger~, configured by ~SCRIBA_*~ variables               |
 | Pay almost nothing for muted log statements    | Ahead-of-time level filtering: a muted call is a no-op                     |
 
-Find the complete technical [[https://jointhefreeworld.org/api-docs/scriba/API.html][API documentation here]].
+Find the complete technical [[https://jointhefreeworld.org/api-docs/scriba/index.html][API documentation here]].
 
 Available loggers: ~console~, ~color-console~, ~json~, ~syslog~ and ~file~.
 
