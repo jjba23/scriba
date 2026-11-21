@@ -109,8 +109,8 @@ guix shell -m manifest.scm -- ./benchmarks/compare/run.sh
 maak docs      # writes doc/api/
 #+end_src
 
-Documentation generation uses [[https://codeberg.org/luis-felipe/guile-documenta][Documenta]] and Texinfo; the published copy
-lives at [[https://jointhefreeworld.org/api-docs/scriba/API.html][jointhefreeworld.org/api-docs/scriba]].
+Documentation generation uses [[https://github.com/jjba23/guile-dokgen][Guile Dokgen]] and Texinfo; the published copy
+lives at [[https://jointhefreeworld.org/api-docs/scriba/index.html][jointhefreeworld.org/api-docs/scriba]].
 
 ** Continuous integration
 :PROPERTIES:
