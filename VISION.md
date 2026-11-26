@@ -76,10 +76,6 @@ of a frame, which is why the depth is bounded.
   that is either a thread (which the project refuses) or a finalizer plus a
   `flush` the program must call — and the flush-on-exit story decides whether a
   crash loses the last hundred lines.
-- **Hot reconfiguration.** The memo key is the argument list, so "change the
-  level of the logger called `app`" has no handle to hold. A resolution seam —
-  a parameter holding the current logger, swapped by a signal handler — is the
-  plausible shape, and the muted path must stay a no-op after it.
 - **Per-package level inheritance.** The thing every other library has, and the
   thing this design gives up deliberately. Adding it means reintroducing a name
   as a key, which reintroduces the surprising singleton the memo avoids; the
@@ -96,9 +92,6 @@ of a frame, which is why the depth is bounded.
   on `SIGHUP`, which is what a service manager actually asks for.
 - **A `with-log-timing` macro** that logs a duration on exit and on a raised
   exception, since every service writes that helper badly at least once.
-- **A redaction layer**: a list of context keys whose values are masked before
-  they reach a backend, so a token cannot be logged by accident. This belongs in
-  the engine, before the layout, not in each template.
 - **A log-line budget for tests**: a logger that captures into a string port and
   an assertion that a body emitted exactly the lines expected, which turns "did
   it log the failure" into a test rather than an eyeball.

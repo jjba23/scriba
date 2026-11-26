@@ -86,6 +86,7 @@ per-thread, per-scope overrides without touching global state:
 | ~default-line-ending~        | ~'trailing~                               | Where the newline goes           |
 | ~default-tag-filter~         | ~'()~                                     | Tags a logger keeps              |
 | ~default-context-filter~     | ~'()~                                     | Context pairs a logger requires  |
+| ~default-redacted-keys~      | ~'()~                                     | Context keys whose values are masked |
 | ~default-json-pretty?~       | ~#f~                                      | Indented JSON output             |
 | ~default-syslog-time-format~ | ISO-8601                                  | Syslog timestamps                |
 | ~default-file-path~          | ~#f~                                      | File backend destination         |
@@ -96,3 +97,8 @@ Logger *construction* also accepts ~#:name~, ~#:level~, ~#:layout~,
 ~#:out-port~, ~#:flush-port?~, ~#:line-ending~, ~#:tag-filter~,
 ~#:context-filter~, ~#:timestamp-format~, and — for the JSON and file
 backends — ~#:pretty?~, ~#:path~, ~#:max-size~ and ~#:max-backups~.
+
+~default-redacted-keys~ is the one setting with no keyword: redaction is a
+policy for every logger in scope rather than a per-backend choice, so it is set
+with ~parameterize~ alone. See
+[[file:usage.org::#redacting-sensitive-context][Redacting Sensitive Context]].

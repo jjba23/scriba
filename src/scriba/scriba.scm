@@ -47,6 +47,7 @@
   #:use-module (srfi srfi-9)
   #:use-module (srfi srfi-1)
   #:use-module (ice-9 match)
+  #:use-module (ice-9 atomic)
   #:export (make-filtered-logger log-trace
                                  log-message
                                  log-debug
@@ -74,6 +75,9 @@
                                  default-flush-port?
                                  default-tag-filter
                                  default-context-filter
+                                 default-redacted-keys
+                                 redacted-value
+                                 redact-context
                                  default-line-ending
                                  write-log-line
                                  format-log-message
@@ -84,6 +88,8 @@
                                  current-log-exception
                                  memoize-logger
                                  maybe-log-proc
+                                 current-logger
+                                 set-current-logger!
                                  tag-match?))
 
 (define-syntax define-record-with-kw
@@ -219,6 +225,41 @@ CURRENT-CONTEXT."
                                          (cdr curr-pair)))) current-context)))
            filter-context)))
 
+(define redacted-value
+  "***")
+
+(define default-redacted-keys
+  (make-parameter '()))
+
+(define (redact-context ctx keys)
+  "Returns CTX with the value of every pair whose key appears in KEYS masked.
+
+Keys are compared with `loose-equal?', so a symbol key and the string naming it
+are the same key. The alist shape and the order of the pairs are kept, so a
+layout renders a redacted context exactly like a readable one."
+  (if (null? keys) ctx
+      (map (lambda (pair)
+             (if (any (lambda (key)
+                        (loose-equal? key
+                                      (car pair))) keys)
+                 (cons (car pair) redacted-value)
+                 pair)) ctx)))
+
+(define (with-redacted-context proc msg args)
+  "Calls PROC with MSG and ARGS, its context redacted for the call.
+
+The tag and context filters have already run by the time this is reached, so
+they still match on the real value; redaction happens here, before any layout
+reads the context, which is why every backend gets it for free. A logger whose
+`default-redacted-keys' is empty pays one parameter lookup for this."
+  (let ((keys (default-redacted-keys)))
+    (if (null? keys)
+        (apply proc msg args)
+        (parameterize ((current-log-context (redact-context
+                                             (current-log-context)
+                                             keys)))
+          (apply proc msg args)))))
+
 (define* (maybe-log-proc #:key level
                          target-level
                          context-filter
@@ -233,7 +274,9 @@ explicitly disabled or falls below the required threshold, this returns the
 If the severity level is active, it returns a higher-order wrapper closure.
 When invoked, this closure inspects fluid parameters via `(current-log-tags)` and
 `(current-log-context)`. If both constraints match their filters, it delegates formatting
-to PROC; otherwise, it safely routes execution to the no-op `log-unit`."
+to PROC with the context redacted - see `redact-context' - according to
+`default-redacted-keys'; otherwise, it safely routes execution to the no-op
+`log-unit'."
   (let ((level-allowed? (cond
                           ;; #f is the explicit "never log" setting, so it
                           ;; wins even over level-less log-message calls.
@@ -253,13 +296,15 @@ to PROC; otherwise, it safely routes execution to the no-op `log-unit`."
         (no-filters? (and (null? tag-filter)
                           (null? context-filter))))
     (if level-allowed?
-        (if no-filters? proc
+        (if no-filters?
+            (lambda (msg . args)
+              (with-redacted-context proc msg args))
             (lambda (msg . args)
               (if (and (tag-match? tag-filter
                                    (current-log-tags))
                        (context-match? context-filter
                                        (current-log-context)))
-                  (apply proc msg args)
+                  (with-redacted-context proc msg args)
                   (apply log-unit msg args)))) log-unit)))
 
 (define* (make-filtered-logger #:key name
@@ -519,6 +564,45 @@ loggers."
         (if cached-logger cached-logger
             (let ((new-logger (apply factory-proc effective-kwargs)))
               (hash-set! cache effective-kwargs new-logger) new-logger))))))
+
+;; The logger that call sites resolve, when a program wants one handle to swap
+;; rather than a logger value threaded through every function. An atomic box
+;; rather than a parameter on purpose: a parameter is per-thread, so a swap made
+;; in a `sigaction' handler - which runs in its own thread - would be invisible
+;; to the threads that log. See `set-current-logger!'.
+(define %current-logger
+  (make-atomic-box #f))
+
+(define (current-logger)
+  "Returns the logger a call site resolves, or #f before one is set.
+
+Read it per line rather than once, because that read is what makes a
+reconfiguration visible:
+
+```scheme
+(log-info (current-logger) \"Signed in\")
+```"
+  (atomic-box-ref %current-logger))
+
+(define (set-current-logger! logger)
+  "Makes LOGGER what `current-logger' returns, in every thread.
+
+This is the seam a hot reconfiguration goes through. A `sigaction' handler can
+call it, because it replaces one value instead of building a logger, and a
+program that logs from several threads sees the swap on its next line.
+
+Whether a severity is muted is decided when LOGGER was built, so swapping in a
+quieter logger leaves its filtered levels as no-ops; there is no runtime level
+check to re-enable. #f clears the seam again, which is what a test restores."
+  (unless (or (not logger)
+              (logger? logger))
+    (scm-error 'scriba-invalid-logger
+               'set-current-logger!
+               (format #f
+                       "Invalid logger ~a; expected a logger built by a backend, or #f"
+                       logger)
+               '() #f))
+  (atomic-box-set! %current-logger logger))
 
 (define current-log-context
   (make-parameter '()))

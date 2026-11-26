@@ -319,6 +319,40 @@ numbers and strings loosely).
   (log-info log "2 + 2 = ~a" (+ 2 2)))
 #+end_src
 
+** Redacting Sensitive Context
+:PROPERTIES:
+:CUSTOM_ID: redacting-sensitive-context
+:END:
+
+A token in the context is a token in every line that context touches, in every
+file and every collector that line reaches. Name the keys that must never be
+written, and the engine masks their values before any layout sees them:
+
+#+begin_src scheme
+(define log (scriba-console-logger #:name 'app
+                                   #:layout '(level message context)))
+
+(parameterize ((default-redacted-keys '("token" "password")))
+  (with-log-context '((token . "s3cr3t") (request-id . "req-1234"))
+    (log-info log "Fetching records")))
+#+end_src
+
+#+begin_example
+[INFO] Fetching records [token=***] [request-id=req-1234]
+#+end_example
+
+The key stays, the value becomes ~***~, and the order of the pairs is kept. The
+list is compared leniently, so the symbol ~token~ and the string ~"token"~ name
+the same key. Because the masking happens in the engine rather than in a
+template, every backend gets it: a JSON or syslog line is masked the same way.
+
+Redaction runs after ~#:context-filter~, so a filter that names a secret still
+matches and still lets the line through.
+
+Two limits worth knowing: only the context is masked, so a value interpolated
+into the message with a format string is written as given; and the list is
+flat, so a key nested inside a context value is not reached.
+
 ** Log Tags
 :PROPERTIES:
 :CUSTOM_ID: log-tags
@@ -493,6 +527,49 @@ file descriptor:
   (log-info log "Hello Scriba!")
   (close-output-port file-port)) ; don't forget to close file ports!
 #+end_src
+
+** Hot Reconfiguration
+:PROPERTIES:
+:CUSTOM_ID: hot-reconfiguration
+:END:
+
+A logger is a value, and a value cannot be changed. To change the level of the
+logger a running program is using — on ~SIGHUP~, say — put it behind the
+resolution seam: call sites read ~(current-logger)~ per line, and a handler
+swaps what that read returns.
+
+#+begin_src scheme
+(use-modules (scriba scriba)
+             (scriba auto))
+
+(set-current-logger! (scriba-auto-logger))
+(sigaction SIGHUP
+           (lambda (signal) (set-current-logger! (scriba-auto-logger
+                                                  #:level 'debug))))
+
+(log-info (current-logger) "Signed in")
+#+end_src
+
+The seam is an atomic box rather than a parameter on purpose: a ~sigaction~
+handler runs in a thread of its own, and a parameter write there lands in that
+thread and never reaches the program that logs. Every thread sees a swap on its
+next line.
+
+Two details decide how it behaves:
+
+- The swap is process-wide, not per thread. When a section of the program needs
+  its own logger, pass it explicitly, the way the rest of this manual does.
+- The level has to be passed, not re-read from the environment, because the
+  factories memoize per argument list: ~(scriba-auto-logger)~ with the same
+  keyword arguments hands back the same cached logger, whose level never moves.
+  A different argument list — ~#:level 'debug~ above — is a different logger,
+  which is the one you want after a reload.
+
+Muting is unaffected. Whether a severity is filtered is decided when the logger
+is built, so a logger swapped in at ~'warning~ still turns ~log-debug~ into a
+no-op, and swapping a ~'debug~ logger back in is what brings the lines back.
+Until something is set, ~(current-logger)~ is ~#f~; ~(set-current-logger! #f)~
+clears it again.
 
 ** Capturing Logs in Tests
 :PROPERTIES:
