@@ -1,3 +1,12 @@
+scriba (1.1.2-1) unstable; urgency=medium
+
+  * Sync with upstream 1.1.2: the pipeline diagram is redrawn as a dark card in
+    a monospace face with neon-green edges, its labels shortened so the text
+    stays legible at a README's column width, and the README shows the logo at
+    96px and the diagram at full width. No library code changed.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Thu, 26 Nov 2026 20:38:00 +0100
+
 scriba (1.1.1-1) unstable; urgency=medium
 
   * Sync with upstream 1.1.1: a documentation release. The guide's redaction and

@@ -7,6 +7,31 @@ Notable changes to Scriba, newest first. Titles are git tags
 ([[https://codeberg.org/jjba23/scriba/tags][codeberg.org/jjba23/scriba/tags]]); releases before 0.4.0 predate this file,
 so their commit log and tag message are the record.
 
+* 1.1.2 — 2026-11-26
+
+Artwork: the flowchart and the README's mark.  Nothing in the library changed,
+and the release exists so the published archive, the channel and the flake carry
+the diagram a reader now sees.
+
+** Changed
+
+- The pipeline diagram is a dark card drawn in a monospace face with neon-green
+  edges, and its labels say the same in fewer characters: each node is two to
+  four short lines, so the flowchart is 1424x299 rather than 2316x209.  Narrower
+  and taller is what makes the text legible at a README's column width, and the
+  flow still runs left to right.
+- The palette is set from the diagram itself — ~themeVariables~ for the colours,
+  a root ~fontFamily~ for the face, ~wrappingWidth~ for the box width — so
+  ~mmdc~ reproduces it with no flags beyond the background.
+- The README shows the logo at 96px and the diagram at the column's full width
+  instead of 720px.
+
+** Fixed
+
+- The copy of the pipeline in the engine's commentary carries the same labels,
+  palette and node classes as the README's, so the API reference and the README
+  cannot drift apart unnoticed.
+
 * 1.1.1 — 2026-11-26
 
 A documentation release: no runtime behaviour changed, and the only source edit
