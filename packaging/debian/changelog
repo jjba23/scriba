@@ -1,3 +1,12 @@
+scriba (1.1.0-1) unstable; urgency=medium
+
+  * Sync with upstream 1.1.0: a redaction layer that masks the values of named
+    context keys before any layout renders them (default-redacted-keys), and a
+    hot reconfiguration seam (current-logger, set-current-logger!) that a
+    sigaction handler can swap without breaking ahead-of-time level filtering.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Thu, 26 Nov 2026 17:25:00 +0100
+
 scriba (1.0.7-1) unstable; urgency=medium
 
   * Sync with upstream 1.0.7: the pinned Guix channel carries guile-dokgen

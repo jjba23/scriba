@@ -7,6 +7,26 @@ Notable changes to Scriba, newest first. Titles are git tags
 ([[https://codeberg.org/jjba23/scriba/tags][codeberg.org/jjba23/scriba/tags]]); releases before 0.4.0 predate this file,
 so their commit log and tag message are the record.
 
+* 1.1.0 — 2026-11-26
+
+Two features that stop a log line from being the wrong thing: a context value
+that must never be written, and a level that has to change while the program
+runs.  Both sit in the engine, so every backend inherits them without a
+template knowing.
+
+** Added
+
+- ~default-redacted-keys~ lists the context keys whose values are masked before
+  a layout renders them, so a token in the context cannot reach a log file or a
+  collector by accident.  The masking sits in the engine, after the tag and
+  context filters and before any backend, so every layout inherits it.
+- ~current-logger~ and ~set-current-logger!~ are a resolution seam for hot
+  reconfiguration: call sites read the logger per line, and a ~sigaction~ handler
+  can swap in a freshly built one.  The seam is an atomic box, not a parameter,
+  because a parameter write made in the handler's thread is invisible to the
+  threads that log.  A muted level stays a no-op, since filtering is decided when
+  a logger is built.
+
 * 1.0.7 — 2026-11-26
 
 A quieter reference that keeps its source folded away: the dokgen behind it
