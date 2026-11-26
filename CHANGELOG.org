@@ -7,6 +7,38 @@ Notable changes to Scriba, newest first. Titles are git tags
 ([[https://codeberg.org/jjba23/scriba/tags][codeberg.org/jjba23/scriba/tags]]); releases before 0.4.0 predate this file,
 so their commit log and tag message are the record.
 
+* 1.1.1 — 2026-11-26
+
+A documentation release: no runtime behaviour changed, and the only source edit
+is the pipeline flowchart in the engine's commentary, which had lost the
+redaction step the code gained in 1.1.0.
+
+** Changed
+
+- The guide gained the cross-references the two 1.1.0 sections lacked: Log
+  Levels to Hot Reconfiguration for the level fixed at construction, and Log
+  Context to Redacting Sensitive Context for a value that should not travel.
+- Redacting Sensitive Context shows what a JSON line carries — the masked value
+  under the same key — names ~redacted-value~, says the default masks nothing,
+  and states the three limits: a message interpolated with a format string is
+  not masked, a key nested inside a context value is not reached, and one mask
+  serves every key.
+- Hot Reconfiguration says what an unset seam does — ~(current-logger)~ is ~#f~
+  and a call through it raises rather than dropping the line — what the read
+  costs, and what a non-logger passed to ~set-current-logger!~ produces.
+- The configuration page states that a parameter is per-thread and points at the
+  seam for a change every thread must see, and the parameters table names the
+  mask.
+- The README names both features in its overview table and feature list, and the
+  comparison table gains rows for redacting a context value and for changing a
+  level at runtime.
+
+** Fixed
+
+- The pipeline diagram, and the copy of it in the engine's commentary, show the
+  redaction step between the filter and the layout. The SVG is rendered from
+  ~resources/diagrams/logging-pipeline.mmd~.
+
 * 1.1.0 — 2026-11-26
 
 Two features that stop a log line from being the wrong thing: a context value

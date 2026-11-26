@@ -1,3 +1,12 @@
+scriba (1.1.1-1) unstable; urgency=medium
+
+  * Sync with upstream 1.1.1: a documentation release. The guide's redaction and
+    hot reconfiguration sections now say what a JSON line carries, what an unset
+    seam does and what the read costs; the README and the comparison table name
+    both features; and the pipeline diagram shows the redaction step.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Thu, 26 Nov 2026 17:55:00 +0100
+
 scriba (1.1.0-1) unstable; urgency=medium
 
   * Sync with upstream 1.1.0: a redaction layer that masks the values of named

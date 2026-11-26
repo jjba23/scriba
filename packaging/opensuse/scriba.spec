@@ -20,7 +20,7 @@
 %global debug_package %{nil}
 
 Name:           scriba
-Version:        1.1.0
+Version:        1.1.1
 Release:        0
 Summary:        Structured logging framework for Guile Scheme
 License:        MIT
