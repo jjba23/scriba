@@ -7,7 +7,7 @@
 [[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]] [[https://jointhefreeworld.org/ggg/dist/gnu-guix.svg]]
 [[https://jointhefreeworld.org/ggg/dist/license-mit.svg]]
 
-#+attr_html: :width 160 :alt Scriba logo
+#+attr_html: :width 128 :alt Scriba logo
 [[file:logo.svg]]
 
 *A structured logging framework for GNU Guile Scheme.*
