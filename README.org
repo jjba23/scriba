@@ -73,7 +73,7 @@ rendered by the logger's layout, and is written to the port the backend was
 given. The seam that changes the logger a call site resolves sits outside this
 path — see [[file:docs/usage.org::#hot-reconfiguration][Hot Reconfiguration]].
 
-#+attr_html: :width 720 :alt A log call passing the level filter, redaction, the layout and the port
+#+attr_html: :width 100% :alt A log call passing the level filter, redaction, the layout and the port
 [[file:resources/diagrams/logging-pipeline.svg]]
 
 * Features

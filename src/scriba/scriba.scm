@@ -30,13 +30,19 @@
 ;; unnecessary runtime level checks during iterative logging calls.
 ;;
 ;; ```mermaid
+;; %%{init: {"theme":"base","fontFamily":"ui-monospace, monospace","themeVariables":{"background":"#04070a","primaryColor":"#0b1f12","primaryTextColor":"#8dffa6","primaryBorderColor":"#39ff14","lineColor":"#39ff14","edgeLabelBackground":"#04070a"}}}%%
 ;; flowchart LR
-;;   call["log-info, log-error, ..."] --> filter["maybe-log-proc<br/>level, tag and context filters"]
-;;   filter -- "muted level or filters miss" --> noop["log-unit, a no-op"]
-;;   filter -- "allowed" --> redact["redact-context<br/>default-redacted-keys"]
-;;   redact --> format["format-log-message<br/>rendered by the logger's layout"]
+;;   call["log-info, log-error, …"] --> filter["maybe-log-proc<br/>level, tags, context"]
+;;   filter -- "muted" --> noop["log-unit<br/>a no-op"]
+;;   filter -- "allowed" --> redact["redact-context<br/>listed keys masked"]
+;;   redact --> format["format-log-message<br/>the logger's layout"]
 ;;   format --> write["write-log-line<br/>framed with its line ending"]
-;;   write --> port[("a port: console, JSON, file or syslog")]
+;;   write --> port[("console, JSON, file, syslog")]
+;;
+;;   classDef hot fill:#0b1f12,stroke:#39ff14,stroke-width:2px,color:#b6ffbe
+;;   classDef cold fill:#06090b,stroke:#2f6b3a,stroke-width:1px,color:#7fbf8c,stroke-dasharray:5 4
+;;   class call,filter,redact,format,write,port hot
+;;   class noop cold
 ;; ```
 ;;
 ;; Thread/fiber-safe contextual tracing data can be appended dynamically using
