@@ -7,6 +7,17 @@ Notable changes to Scriba, newest first. Titles are git tags
 ([[https://codeberg.org/jjba23/scriba/tags][codeberg.org/jjba23/scriba/tags]]); releases before 0.4.0 predate this file,
 so their commit log and tag message are the record.
 
+* 1.0.7 — 2026-11-26
+
+A quieter reference that keeps its source folded away: the dokgen behind it
+changed, nothing else did.
+
+** Changed
+
+- The pinned Guix channel carries ~guile-dokgen~ 0.12.0: the published API
+  reference folds the source behind each definition into a panel a reader
+  opens, and reads on a quieter page with translucent surfaces.
+
 * 1.0.4 — 2026-11-21
 
 A styling fix: the reference has been 7.x HTML since the dokgen migration, and
