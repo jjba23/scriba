@@ -45,11 +45,13 @@ Guix package: ~guile-scriba~
 |------------------------------------------------+----------------------------------------------------------------------------|
 | Understand what your program is doing          | ~log-info~, ~log-warning~, ~log-error~ and friends, with a level hierarchy |
 | Correlate lines with a request                 | ~with-log-context~ — dynamically scoped key/value pairs                    |
+| Keep a secret out of the log                   | ~default-redacted-keys~ — masks named context values in every backend      |
 | Turn categories of logs on and off             | ~with-log-tags~ plus tag filters, with or without levels                   |
 | See why something failed, not just that it did | ~with-exception-logging~ — type, message and trace, per backend            |
 | Ship structured logs to Loki or Elasticsearch  | A JSON backend that emits one object per line                              |
 | Keep logs in a file that does not grow forever | A rotating file backend with size limits and backups                       |
 | Change behaviour per environment               | The ~scriba-auto-logger~, configured by ~SCRIBA_*~ variables               |
+| Change the level of a running program          | ~(current-logger)~ + ~set-current-logger!~ — a swap a signal handler makes |
 | Pay almost nothing for muted log statements    | Ahead-of-time level filtering: a muted call is a no-op                     |
 
 Find the complete technical [[https://jointhefreeworld.org/api-docs/scriba/index.html][API documentation here]].
@@ -66,10 +68,12 @@ Available loggers: ~console~, ~color-console~, ~json~, ~syslog~ and ~file~.
 
 A log call is a path, not a print statement. The level filter is decided once,
 when the logger is built, so a muted call is bound to a no-op and costs a
-function call; what survives it is rendered by the logger's layout and written
-to the port the backend was given.
+function call; what survives it has the context keys you named masked, is
+rendered by the logger's layout, and is written to the port the backend was
+given. The seam that changes the logger a call site resolves sits outside this
+path — see [[file:docs/usage.org::#hot-reconfiguration][Hot Reconfiguration]].
 
-#+attr_html: :width 720 :alt A log call passing the level filter, the layout and the port
+#+attr_html: :width 720 :alt A log call passing the level filter, redaction, the layout and the port
 [[file:resources/diagrams/logging-pipeline.svg]]
 
 * Features
@@ -85,11 +89,20 @@ to the port the backend was given.
   formatting, flushing and I/O entirely.
 - *Environment-driven configuration.* The auto-logger reads ~SCRIBA_*~
   variables, so development and production differ only in their environment.
+- *Reconfigure without a restart.* ~(current-logger)~ is read per line and
+  ~set-current-logger!~ swaps what it returns, so a ~SIGHUP~ handler can raise
+  the level of a running program — in every thread — without threading a new
+  logger through every function. Filtering is still ahead of time: a muted
+  level is a no-op whichever logger is resolved.
 - *Logger memoization.* Asking twice for the same logger configuration returns
   the same instance; creating loggers deep in a call stack is cheap.
 - *Structured context, no plumbing.* ~with-log-context~ attaches key/value
   pairs to everything logged inside its body, using Guile's ~parameterize~
   rather than global mutable state or locks.
+- *Secrets stay out of the line.* Name the context keys that must never be
+  written and ~default-redacted-keys~ masks their values in the engine, before
+  any layout renders them — so no template can forget, and a JSON or syslog
+  line is masked exactly like a console one.
 - *Tags and property-based filtering.* Log with tags instead of levels, or
   alongside levels, and keep only the lines you care about.
 - *Exceptions that read like exceptions.* ~with-exception-logging~ logs Guile's
@@ -115,7 +128,7 @@ to the port the backend was given.
 
 - [[file:docs/installation.org][Installation]] — ways to install, packages and requirements
 - [[file:docs/quick-start.org][Quick Start]] — install, log, run, reconfigure
-- [[file:docs/usage.org][Usage]] — loggers, levels, context, tags, routing and custom backends
+- [[file:docs/usage.org][Usage]] — loggers, levels, context, redaction, hot reconfiguration, routing and custom backends
 - [[file:docs/configuration.org][Configuration]] — environment variables, defaults and parameters
 - [[file:docs/why-scriba.org][Why Scriba?]] — motivation, observability and reproducibility
 - [[file:docs/comparisons.org][Compared to Other Logging Libraries]] — features, approach and philosophy

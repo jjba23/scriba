@@ -75,6 +75,11 @@ per-thread, per-scope overrides without touching global state:
 [WARNING] shown
 #+end_example
 
+A parameter is per-thread, so ~parameterize~ is how one scope changes how the
+loggers it builds or reads behave. A change that every thread must see — a level
+raised at runtime — is not a parameter: it goes through
+[[file:usage.org::#hot-reconfiguration][the resolution seam]] instead.
+
 | Parameter                    | Default                                   | Purpose                          |
 |------------------------------+-------------------------------------------+----------------------------------|
 | ~default-log-level~          | ~'info~                                   | Effective level for new loggers  |
@@ -86,7 +91,7 @@ per-thread, per-scope overrides without touching global state:
 | ~default-line-ending~        | ~'trailing~                               | Where the newline goes           |
 | ~default-tag-filter~         | ~'()~                                     | Tags a logger keeps              |
 | ~default-context-filter~     | ~'()~                                     | Context pairs a logger requires  |
-| ~default-redacted-keys~      | ~'()~                                     | Context keys whose values are masked |
+| ~default-redacted-keys~      | ~'()~ (mask nothing)                      | Context keys written as ~"***"~  |
 | ~default-json-pretty?~       | ~#f~                                      | Indented JSON output             |
 | ~default-syslog-time-format~ | ISO-8601                                  | Syslog timestamps                |
 | ~default-file-path~          | ~#f~                                      | File backend destination         |
@@ -100,5 +105,6 @@ backends — ~#:pretty?~, ~#:path~, ~#:max-size~ and ~#:max-backups~.
 
 ~default-redacted-keys~ is the one setting with no keyword: redaction is a
 policy for every logger in scope rather than a per-backend choice, so it is set
-with ~parameterize~ alone. See
+with ~parameterize~ alone. It names context keys only — a secret interpolated
+into the message is written as given. See
 [[file:usage.org::#redacting-sensitive-context][Redacting Sensitive Context]].

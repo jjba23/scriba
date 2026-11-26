@@ -287,6 +287,10 @@ raised scriba-invalid-log-level: Invalid log level verbose;
 ~#:level #f~ mutes everything, including ~log-message~; ~#:level #t~ lets
 everything through.
 
+The level is decided once, when the logger is built, which is what makes a muted
+call a no-op. To change it while the program runs, swap the logger a call site
+resolves: see [[#hot-reconfiguration][Hot Reconfiguration]].
+
 ** Log Context
 :PROPERTIES:
 :CUSTOM_ID: log-context
@@ -319,6 +323,11 @@ numbers and strings loosely).
   (log-info log "2 + 2 = ~a" (+ 2 2)))
 #+end_src
 
+Context reaches every destination the line reaches, since the backend's layout
+renders it. When a value must not travel that far,
+[[#redacting-sensitive-context][Redacting Sensitive Context]] keeps it out of
+the line without giving up the key.
+
 ** Redacting Sensitive Context
 :PROPERTIES:
 :CUSTOM_ID: redacting-sensitive-context
@@ -341,17 +350,40 @@ written, and the engine masks their values before any layout sees them:
 [INFO] Fetching records [token=***] [request-id=req-1234]
 #+end_example
 
-The key stays, the value becomes ~***~, and the order of the pairs is kept. The
-list is compared leniently, so the symbol ~token~ and the string ~"token"~ name
-the same key. Because the masking happens in the engine rather than in a
-template, every backend gets it: a JSON or syslog line is masked the same way.
+The key stays, the value becomes ~redacted-value~, which is ~"***"~, and the
+order of the pairs is kept. The list is compared leniently, so the symbol
+~token~ and the string ~"token"~ name the same key. Nothing is masked until you
+set the parameter: the default list is empty, and a context is then written as
+it is.
+
+Because the masking happens in the engine rather than in a template, every
+backend gets it. The same call through the JSON backend:
+
+#+begin_src scheme
+(use-modules (scriba json))
+
+(parameterize ((default-redacted-keys '("token")))
+  (with-log-context '((token . "s3cr3t") (request-id . "req-1234"))
+    (log-info (scriba-json-logger #:layout '(level message context))
+              "Fetching records")))
+#+end_src
+
+#+begin_example
+{"level":"INFO","message":"Fetching records","token":"***","request-id":"req-1234"}
+#+end_example
 
 Redaction runs after ~#:context-filter~, so a filter that names a secret still
-matches and still lets the line through.
+matches; the masked value is what the line carries.
 
-Two limits worth knowing: only the context is masked, so a value interpolated
-into the message with a format string is written as given; and the list is
-flat, so a key nested inside a context value is not reached.
+Three limits worth knowing:
+
+- Only the context is masked. A value interpolated into the message with a
+  format string is written as given, so keep a secret out of the format
+  arguments as well.
+- The list is flat. A key nested inside a context value is not reached, because
+  Scriba does not walk a value it was handed.
+- There is one mask for every key, so a reader cannot tell a short token from a
+  long one — and cannot guess the length either.
 
 ** Log Tags
 :PROPERTIES:
@@ -534,9 +566,9 @@ file descriptor:
 :END:
 
 A logger is a value, and a value cannot be changed. To change the level of the
-logger a running program is using — on ~SIGHUP~, say — put it behind the
-resolution seam: call sites read ~(current-logger)~ per line, and a handler
-swaps what that read returns.
+logger a running program is using — on ~SIGHUP~, say, to turn debug logging on
+for a minute without a restart — put it behind the resolution seam: call sites
+read ~(current-logger)~ per line, and a handler swaps what that read returns.
 
 #+begin_src scheme
 (use-modules (scriba scriba)
@@ -568,8 +600,19 @@ Two details decide how it behaves:
 Muting is unaffected. Whether a severity is filtered is decided when the logger
 is built, so a logger swapped in at ~'warning~ still turns ~log-debug~ into a
 no-op, and swapping a ~'debug~ logger back in is what brings the lines back.
-Until something is set, ~(current-logger)~ is ~#f~; ~(set-current-logger! #f)~
-clears it again.
+The read costs one atomic load and allocates nothing, and a muted line stays a
+no-op: the swap replaces a whole logger, never a level inside one.
+
+Nothing is resolved until you set it, so ~(current-logger)~ is ~#f~ before the
+first ~set-current-logger!~. A call that passes ~#f~ to ~log-info~ raises
+instead of dropping the line, which puts a forgotten ~set-current-logger!~ in
+the first test rather than in production. ~(set-current-logger! #f)~ clears the
+seam again, and a non-logger raises at the swap:
+
+#+begin_example
+raised scriba-invalid-logger: Invalid logger console;
+  expected a logger built by a backend, or #f
+#+end_example
 
 ** Capturing Logs in Tests
 :PROPERTIES:

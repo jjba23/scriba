@@ -43,23 +43,25 @@ the context attached by the language itself.
 :CUSTOM_ID: feature-comparison
 :END:
 
-| Feature                              | Scriba                          | Python ~logging~ / ~loguru~ | Go ~slog~          | Rust ~tracing~      | Node ~pino~      | Logback        |
-|--------------------------------------+---------------------------------+-----------------------------+--------------------+---------------------+------------------+----------------|
-| Severity levels                      | 7, and levels are optional      | 5 (+custom)                 | 4 + custom         | 5                   | 6 + custom       | 5              |
-| Muted statement cost                 | a no-op binding (~55 ns here)   | level check per call        | handler check      | callsite interest   | level check      | level check    |
-| Where the level filter happens       | once, at logger construction    | every call                  | every call         | once per callsite   | every call       | every call     |
-| Structured context                   | ~with-log-context~ (dynamic)    | adapter, ~contextvars~      | ~With~             | spans               | ~child~          | MDC            |
-| Tag / property filtering             | ~with-log-tags~ + ~#:tag-filter~ | ~extra~ dict, filters       | attributes         | fields              | child bindings   | markers        |
-| Filter by context value              | ~#:context-filter~              | filter callables            | handler code       | ~EnvFilter~         | handler code     | turbo filters  |
-| JSON lines                           | built in                        | formatter or ~serialize~    | built in           | subscriber          | built in         | JSON encoder   |
-| Plain text lines                     | built in (console, file)        | built in                    | built in           | built in            | prettifier       | built in       |
-| Syslog                               | built in, RFC 5424 shaped       | ~SysLogHandler~             | you write it       | via OpenTelemetry   | transport        | appender       |
-| File rotation                        | ~#:max-size~, ~#:max-backups~   | ~RotatingFileHandler~       | you write it       | rolling appender    | transport        | ~RollingFileAppender~ |
-| Exceptions                           | ~with-exception-logging~        | ~logger.exception~          | value + ~!~        | ~?err~ field        | ~err~ serializer | throwable arg  |
-| Layout is a value you pass           | ~#:layout '(level time message)~ | formatter string            | handler options    | subscriber config   | options          | XML pattern    |
-| Loggers are created by               | a memoized constructor          | a global registry           | ~slog.New~         | global macros       | module singleton | XML config     |
-| Configuration source                 | arguments and ~SCRIBA_*~ env    | code, ~dictConfig~, ini     | code               | code or env         | code             | XML or Groovy  |
-| Runtime dependencies                 | Guile + guile-json              | none (stdlib)               | none               | ~log~ + backend     | ~pino~           | slf4j + logback |
+| Feature                              | Scriba                           | Python ~logging~ / ~loguru~ | Go ~slog~       | Rust ~tracing~    | Node ~pino~      | Logback               |
+|--------------------------------------+----------------------------------+-----------------------------+-----------------+-------------------+------------------+-----------------------|
+| Severity levels                      | 7, and levels are optional       | 5 (+custom)                 | 4 + custom      | 5                 | 6 + custom       | 5                     |
+| Muted statement cost                 | a no-op binding (~55 ns here)    | level check per call        | handler check   | callsite interest | level check      | level check           |
+| Where the level filter happens       | once, at logger construction     | every call                  | every call      | once per callsite | every call       | every call            |
+| Structured context                   | ~with-log-context~ (dynamic)     | adapter, ~contextvars~      | ~With~          | spans             | ~child~          | MDC                   |
+| Tag / property filtering             | ~with-log-tags~ + ~#:tag-filter~ | ~extra~ dict, filters       | attributes      | fields            | child bindings   | markers               |
+| Filter by context value              | ~#:context-filter~               | filter callables            | handler code    | ~EnvFilter~       | handler code     | turbo filters         |
+| Redacting a secret in the context    | ~default-redacted-keys~, engine  | a ~Filter~ you write        | handler code    | a field visitor   | ~redact~ option  | ~%replace~            |
+| JSON lines                           | built in                         | formatter or ~serialize~    | built in        | subscriber        | built in         | JSON encoder          |
+| Plain text lines                     | built in (console, file)         | built in                    | built in        | built in          | prettifier       | built in              |
+| Syslog                               | built in, RFC 5424 shaped        | ~SysLogHandler~             | you write it    | via OpenTelemetry | transport        | appender              |
+| File rotation                        | ~#:max-size~, ~#:max-backups~    | ~RotatingFileHandler~       | you write it    | rolling appender  | transport        | ~RollingFileAppender~ |
+| Exceptions                           | ~with-exception-logging~         | ~logger.exception~          | value + ~!~     | ~?err~ field      | ~err~ serializer | throwable arg         |
+| Layout is a value you pass           | ~#:layout '(level time message)~ | formatter string            | handler options | subscriber config | options          | XML pattern           |
+| Loggers are created by               | a memoized constructor           | a global registry           | ~slog.New~      | global macros     | module singleton | XML config            |
+| Configuration source                 | arguments and ~SCRIBA_*~ env     | code, ~dictConfig~, ini     | code            | code or env       | code             | XML or Groovy         |
+| Change the level of a running logger | ~set-current-logger!~ seam       | ~logger.setLevel~           | ~slog.LevelVar~ | reload handle     | ~logger.level~   | JMX or context        |
+| Runtime dependencies                 | Guile + guile-json               | none (stdlib)               | none            | ~log~ + backend   | ~pino~           | slf4j + logback       |
 
 ** Approach: the same three problems, solved differently
 :PROPERTIES:
