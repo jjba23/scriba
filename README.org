@@ -7,9 +7,6 @@
 [[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]] [[https://jointhefreeworld.org/ggg/dist/gnu-guix.svg]]
 [[https://jointhefreeworld.org/ggg/dist/license-mit.svg]]
 
-#+attr_html: :width 96 :alt Scriba logo
-[[file:logo.svg]]
-
 *A structured logging framework for GNU Guile Scheme.*
 
 Scriba turns scattered ~display~ calls into real log lines: levelled, taggable,
@@ -32,9 +29,11 @@ and compile-time macros."
 
 *Links:* [[https://codeberg.org/jjba23/scriba][Source & issues]] ·
 [[https://jointhefreeworld.org/api-docs/scriba/index.html][API reference]] ·
-[[https://lucidplan.jointhefreeworld.org/tickets/scriba][Backlog & kanban]] ·
 [[file:CHANGELOG.org][Changelog]] ·
 Guix package: ~guile-scriba~
+
+#+attr_html: :width 96 :alt Scriba logo
+[[file:logo.svg]]
 
 * At a glance
 :PROPERTIES:
